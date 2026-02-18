@@ -13,31 +13,37 @@
     "test:parsers": "tsx scripts/test-parsers.ts"
   },
   "dependencies": {
+    "better-sqlite3": "latest",
+    "clsx": "^2.0.0",
+    "drizzle-kit": "^0.20.0",
+    "drizzle-orm": "^0.30.0",
+    "next": "^15.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "next": "^15.0.0",
-    "better-sqlite3": "latest",
-    "drizzle-orm": "^0.30.0",
-    "drizzle-kit": "^0.20.0",
-    "xlsx": "^0.18.5",
-    "clsx": "^2.0.0",
-    "tailwind-merge": "^2.2.0"
+    "recharts": "^3.7.0",
+    "tailwind-merge": "^2.2.0",
+    "xlsx": "^0.18.5"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["better-sqlite3", "esbuild", "sharp", "unrs-resolver"]
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
-    "tailwindcss": "^3.4.0",
-    "postcss": "^8.4.31",
-    "autoprefixer": "^10.4.16",
+    "@types/better-sqlite3": "^7.6.8",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
-    "@types/better-sqlite3": "^7.6.8",
+    "autoprefixer": "^10.4.16",
+    "drizzle-kit": "^0.20.0",
     "eslint": "^8.55.0",
     "eslint-config-next": "^15.0.0",
-    "drizzle-kit": "^0.20.0",
-    "tsx": "^4.7.0"
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.4.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }

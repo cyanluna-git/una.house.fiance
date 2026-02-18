@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 
 export default function ImportPage() {
   const [dragging, setDragging] = useState(false);
@@ -66,12 +65,8 @@ export default function ImportPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <Link href="/" className="text-blue-600 hover:text-blue-700 mb-6 block">
-          ← 대시보드로 돌아가기
-        </Link>
-
+    <div className="p-6">
+      <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-slate-900 mb-8">카드 명세서 임포트</h1>
 
         {/* Dropzone */}
@@ -161,6 +156,6 @@ export default function ImportPage() {
           </ul>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

@@ -14,7 +14,9 @@ export const transactions = sqliteTable("transactions", {
   paymentAmount: integer("payment_amount").default(0),
   fee: integer("fee").default(0),
   discount: integer("discount").default(0),
-  category: text("category").default("미분류"),
+  categoryL1: text("category_l1").default("기타"),
+  categoryL2: text("category_l2").default("미분류"),
+  categoryL3: text("category_l3").default(""),
   note: text("note"),
   sourceFile: text("source_file"),
   sourceType: text("source_type").default("card"),
@@ -25,7 +27,9 @@ export const transactions = sqliteTable("transactions", {
 export const categoryRules = sqliteTable("category_rules", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   keyword: text("keyword").notNull(),
-  category: text("category").notNull(),
+  categoryL1: text("category_l1").notNull(),
+  categoryL2: text("category_l2").notNull().default(""),
+  categoryL3: text("category_l3").notNull().default(""),
   priority: integer("priority").default(0),
 });
 

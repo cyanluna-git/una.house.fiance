@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Sidebar from "@/components/Sidebar";
 
 export const metadata: Metadata = {
   title: "unahouse.finance - 개인 자산관리",
@@ -13,7 +14,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1 bg-gradient-to-b from-slate-50 to-slate-100 overflow-auto">
+          {children}
+        </main>
+      </body>
     </html>
   );
 }

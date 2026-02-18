@@ -27,23 +27,28 @@ export async function POST(request: NextRequest) {
     const savedCount = parsedTransactions.length;
     const duplicateCount = 0;
 
-    const transactionsToSave = parsedTransactions.map((t) => ({
-      date: t.date,
-      cardCompany: t.cardCompany,
-      cardName: t.cardName,
-      merchant: t.merchant,
-      amount: t.amount,
-      paymentType: t.paymentType,
-      installmentMonths: t.installmentMonths || 0,
-      installmentSeq: t.installmentSeq || 0,
-      paymentAmount: t.paymentAmount || 0,
-      fee: t.fee || 0,
-      discount: t.discount || 0,
-      category: categorizeMerchant(t.merchant),
-      sourceFile: file.name,
-      sourceType: "card" as const,
-      isManual: false,
-    }));
+    const transactionsToSave = parsedTransactions.map((t) => {
+      const cat = categorizeMerchant(t.merchant);
+      return {
+        date: t.date,
+        cardCompany: t.cardCompany,
+        cardName: t.cardName,
+        merchant: t.merchant,
+        amount: t.amount,
+        paymentType: t.paymentType,
+        installmentMonths: t.installmentMonths || 0,
+        installmentSeq: t.installmentSeq || 0,
+        paymentAmount: t.paymentAmount || 0,
+        fee: t.fee || 0,
+        discount: t.discount || 0,
+        categoryL1: cat.categoryL1,
+        categoryL2: cat.categoryL2,
+        categoryL3: cat.categoryL3,
+        sourceFile: file.name,
+        sourceType: "card" as const,
+        isManual: false,
+      };
+    });
 
     try {
       db.insert(transactions).values(transactionsToSave).run();

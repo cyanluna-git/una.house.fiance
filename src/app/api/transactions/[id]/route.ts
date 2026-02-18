@@ -12,10 +12,12 @@ export async function PATCH(
     const id = parseInt(idStr);
     const body = await request.json();
 
-    const { category, note, merchant } = body;
+    const { categoryL1, categoryL2, categoryL3, note, merchant } = body;
 
     const updates: Record<string, any> = {};
-    if (category !== undefined) updates.category = category;
+    if (categoryL1 !== undefined) updates.categoryL1 = categoryL1;
+    if (categoryL2 !== undefined) updates.categoryL2 = categoryL2;
+    if (categoryL3 !== undefined) updates.categoryL3 = categoryL3;
     if (note !== undefined) updates.note = note;
     if (merchant !== undefined) updates.merchant = merchant;
 

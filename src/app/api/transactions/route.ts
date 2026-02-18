@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50");
     const from = searchParams.get("from");
     const to = searchParams.get("to");
-    const category = searchParams.get("category");
+    const categoryL1 = searchParams.get("categoryL1");
+    const categoryL2 = searchParams.get("categoryL2");
     const cardCompany = searchParams.get("card");
 
     const offset = (page - 1) * limit;
@@ -20,7 +21,8 @@ export async function GET(request: NextRequest) {
     const conditions: any[] = [];
     if (from) conditions.push(gte(transactions.date, from));
     if (to) conditions.push(lte(transactions.date, to));
-    if (category) conditions.push(eq(transactions.category, category));
+    if (categoryL1) conditions.push(eq(transactions.categoryL1, categoryL1));
+    if (categoryL2) conditions.push(eq(transactions.categoryL2, categoryL2));
     if (cardCompany) conditions.push(eq(transactions.cardCompany, cardCompany));
 
     let query = db.select().from(transactions);
@@ -57,7 +59,9 @@ export async function POST(request: NextRequest) {
       merchant,
       amount,
       paymentType = "수동입력",
-      category,
+      categoryL1,
+      categoryL2,
+      categoryL3,
       note,
       sourceType = "manual",
     } = body;
@@ -69,6 +73,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const cat = categoryL1
+      ? { categoryL1, categoryL2: categoryL2 || "", categoryL3: categoryL3 || "" }
+      : categorizeMerchant(merchant);
+
     const result = db
       .insert(transactions)
       .values({
@@ -77,7 +85,9 @@ export async function POST(request: NextRequest) {
         merchant,
         amount,
         paymentType,
-        category: category || categorizeMerchant(merchant),
+        categoryL1: cat.categoryL1,
+        categoryL2: cat.categoryL2,
+        categoryL3: cat.categoryL3,
         note,
         sourceType,
         isManual: true,

@@ -1,8 +1,14 @@
 import { initialCategoryRules } from "./db/seed-rules";
 
+export interface CategoryResult {
+  categoryL1: string;
+  categoryL2: string;
+  categoryL3: string;
+}
+
 const rules = initialCategoryRules;
 
-export function categorizeMerchant(merchant: string): string {
+export function categorizeMerchant(merchant: string): CategoryResult {
   const lowerMerchant = merchant.toLowerCase();
 
   // Sort by priority (descending) to check higher priority rules first
@@ -10,9 +16,13 @@ export function categorizeMerchant(merchant: string): string {
 
   for (const rule of sortedRules) {
     if (lowerMerchant.includes(rule.keyword.toLowerCase())) {
-      return rule.category;
+      return {
+        categoryL1: rule.categoryL1,
+        categoryL2: rule.categoryL2 || "",
+        categoryL3: rule.categoryL3 || "",
+      };
     }
   }
 
-  return "미분류";
+  return { categoryL1: "기타", categoryL2: "미분류", categoryL3: "" };
 }

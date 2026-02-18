@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
+import { getL1Categories, getL2Categories, getL3Categories } from "@/lib/categories";
 
 interface Transaction {
   id: number;
@@ -9,21 +9,11 @@ interface Transaction {
   cardCompany: string;
   merchant: string;
   amount: number;
-  category: string;
+  categoryL1: string;
+  categoryL2: string;
+  categoryL3: string;
   note: string | null;
 }
-
-const CATEGORIES = [
-  "미분류",
-  "식비",
-  "교통",
-  "쇼핑",
-  "보험",
-  "통신",
-  "의료",
-  "기부",
-  "기타",
-];
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -33,7 +23,8 @@ export default function TransactionsPage() {
   const [filters, setFilters] = useState({
     from: "",
     to: "",
-    category: "",
+    categoryL1: "",
+    categoryL2: "",
     card: "",
   });
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -49,7 +40,8 @@ export default function TransactionsPage() {
         limit: String(limit),
         ...(filters.from && { from: filters.from }),
         ...(filters.to && { to: filters.to }),
-        ...(filters.category && { category: filters.category }),
+        ...(filters.categoryL1 && { categoryL1: filters.categoryL1 }),
+        ...(filters.categoryL2 && { categoryL2: filters.categoryL2 }),
         ...(filters.card && { card: filters.card }),
       });
 
@@ -71,7 +63,9 @@ export default function TransactionsPage() {
   const handleEdit = (transaction: Transaction) => {
     setEditingId(transaction.id);
     setEditData({
-      category: transaction.category,
+      categoryL1: transaction.categoryL1,
+      categoryL2: transaction.categoryL2,
+      categoryL3: transaction.categoryL3,
       note: transaction.note,
       merchant: transaction.merchant,
     });
@@ -84,7 +78,13 @@ export default function TransactionsPage() {
       const response = await fetch(`/api/transactions/${editingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editData),
+        body: JSON.stringify({
+          categoryL1: editData.categoryL1,
+          categoryL2: editData.categoryL2,
+          categoryL3: editData.categoryL3,
+          note: editData.note,
+          merchant: editData.merchant,
+        }),
       });
 
       if (response.ok) {
@@ -118,17 +118,13 @@ export default function TransactionsPage() {
   );
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-4">
+    <div className="p-6">
       <div className="max-w-6xl mx-auto">
-        <Link href="/" className="text-blue-600 hover:text-blue-700 mb-6 block">
-          ← 대시보드로 돌아가기
-        </Link>
-
         <h1 className="text-3xl font-bold text-slate-900 mb-6">거래 내역</h1>
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 시작 날짜
@@ -155,21 +151,42 @@ export default function TransactionsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                카테고리
+                대분류
               </label>
               <select
-                value={filters.category}
+                value={filters.categoryL1}
                 onChange={(e) =>
-                  setFilters({ ...filters, category: e.target.value })
+                  setFilters({ ...filters, categoryL1: e.target.value, categoryL2: "" })
                 }
                 className="w-full px-3 py-2 border border-slate-300 rounded"
               >
                 <option value="">모두</option>
-                {CATEGORIES.map((cat) => (
+                {getL1Categories().map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
                   </option>
                 ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                중분류
+              </label>
+              <select
+                value={filters.categoryL2}
+                onChange={(e) =>
+                  setFilters({ ...filters, categoryL2: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded"
+                disabled={!filters.categoryL1}
+              >
+                <option value="">모두</option>
+                {filters.categoryL1 &&
+                  getL2Categories(filters.categoryL1).map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
               </select>
             </div>
             <div>
@@ -244,26 +261,87 @@ export default function TransactionsPage() {
                         </td>
                         <td className="px-4 py-3">
                           {editingId === tx.id ? (
-                            <select
-                              value={editData.category || ""}
-                              onChange={(e) =>
-                                setEditData({
-                                  ...editData,
-                                  category: e.target.value,
-                                })
-                              }
-                              className="px-2 py-1 border border-slate-300 rounded text-sm"
-                            >
-                              {CATEGORIES.map((cat) => (
-                                <option key={cat} value={cat}>
-                                  {cat}
-                                </option>
-                              ))}
-                            </select>
+                            <div className="flex flex-col gap-1">
+                              <select
+                                value={editData.categoryL1 || ""}
+                                onChange={(e) =>
+                                  setEditData({
+                                    ...editData,
+                                    categoryL1: e.target.value,
+                                    categoryL2: "",
+                                    categoryL3: "",
+                                  })
+                                }
+                                className="px-2 py-1 border border-slate-300 rounded text-xs"
+                              >
+                                {getL1Categories().map((cat) => (
+                                  <option key={cat} value={cat}>
+                                    {cat}
+                                  </option>
+                                ))}
+                              </select>
+                              {editData.categoryL1 &&
+                                getL2Categories(editData.categoryL1).length > 0 && (
+                                  <select
+                                    value={editData.categoryL2 || ""}
+                                    onChange={(e) =>
+                                      setEditData({
+                                        ...editData,
+                                        categoryL2: e.target.value,
+                                        categoryL3: "",
+                                      })
+                                    }
+                                    className="px-2 py-1 border border-slate-300 rounded text-xs"
+                                  >
+                                    <option value="">-</option>
+                                    {getL2Categories(editData.categoryL1).map(
+                                      (cat) => (
+                                        <option key={cat} value={cat}>
+                                          {cat}
+                                        </option>
+                                      )
+                                    )}
+                                  </select>
+                                )}
+                              {editData.categoryL1 &&
+                                editData.categoryL2 &&
+                                getL3Categories(
+                                  editData.categoryL1,
+                                  editData.categoryL2
+                                ).length > 0 && (
+                                  <select
+                                    value={editData.categoryL3 || ""}
+                                    onChange={(e) =>
+                                      setEditData({
+                                        ...editData,
+                                        categoryL3: e.target.value,
+                                      })
+                                    }
+                                    className="px-2 py-1 border border-slate-300 rounded text-xs"
+                                  >
+                                    <option value="">-</option>
+                                    {getL3Categories(
+                                      editData.categoryL1,
+                                      editData.categoryL2
+                                    ).map((cat) => (
+                                      <option key={cat} value={cat}>
+                                        {cat}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
+                            </div>
                           ) : (
-                            <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                              {tx.category}
-                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                {tx.categoryL1}
+                              </span>
+                              {tx.categoryL2 && (
+                                <span className="inline-block px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs">
+                                  {tx.categoryL2}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-center">
@@ -331,6 +409,6 @@ export default function TransactionsPage() {
           )}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

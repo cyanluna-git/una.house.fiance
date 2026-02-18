@@ -1,32 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { getL1Categories, getL2Categories, getL3Categories } from "@/lib/categories";
 
 const TRANSACTION_TYPES = [
-  { value: "salary", label: "💰 월급" },
-  { value: "bonus", label: "🎁 보너스" },
-  { value: "loan-payment", label: "💳 대출금 상환" },
-  { value: "insurance", label: "🛡️ 보험료" },
-  { value: "utility", label: "📞 공과금" },
-  { value: "cash-withdrawal", label: "💸 현금 출금" },
-  { value: "investment", label: "📈 투자" },
-  { value: "savings", label: "🏦 저축" },
-  { value: "other", label: "📌 기타" },
-];
-
-const CATEGORIES = [
-  "미분류",
-  "식비",
-  "교통",
-  "쇼핑",
-  "보험",
-  "통신",
-  "의료",
-  "기부",
-  "급여",
-  "대출",
-  "기타",
+  { value: "salary", label: "월급" },
+  { value: "bonus", label: "보너스" },
+  { value: "loan-payment", label: "대출금 상환" },
+  { value: "insurance", label: "보험료" },
+  { value: "utility", label: "공과금" },
+  { value: "cash-withdrawal", label: "현금 출금" },
+  { value: "investment", label: "투자" },
+  { value: "savings", label: "저축" },
+  { value: "other", label: "기타" },
 ];
 
 export default function ManualPage() {
@@ -35,7 +21,9 @@ export default function ManualPage() {
     transactionType: "salary",
     amount: "",
     merchant: "",
-    category: "급여",
+    categoryL1: "수입",
+    categoryL2: "급여",
+    categoryL3: "",
     note: "",
   });
 
@@ -63,7 +51,9 @@ export default function ManualPage() {
           merchant: formData.merchant,
           amount,
           paymentType: formData.transactionType,
-          category: formData.category,
+          categoryL1: formData.categoryL1,
+          categoryL2: formData.categoryL2,
+          categoryL3: formData.categoryL3,
           note: formData.note,
           sourceType: "manual",
         }),
@@ -76,7 +66,9 @@ export default function ManualPage() {
           transactionType: "salary",
           amount: "",
           merchant: "",
-          category: "급여",
+          categoryL1: "수입",
+          categoryL2: "급여",
+          categoryL3: "",
           note: "",
         });
       } else {
@@ -91,12 +83,8 @@ export default function ManualPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <Link href="/" className="text-blue-600 hover:text-blue-700 mb-6 block">
-          ← 대시보드로 돌아가기
-        </Link>
-
+    <div className="p-6">
+      <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">수동 거래 입력</h1>
         <p className="text-slate-600 mb-8">
           월급, 대출금, 보험료 등 비카드 거래를 기록하세요
@@ -174,25 +162,83 @@ export default function ManualPage() {
             />
           </div>
 
-          {/* Category */}
+          {/* Category L1 */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              카테고리
+              대분류
             </label>
             <select
-              value={formData.category}
+              value={formData.categoryL1}
               onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
+                setFormData({
+                  ...formData,
+                  categoryL1: e.target.value,
+                  categoryL2: "",
+                  categoryL3: "",
+                })
               }
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {CATEGORIES.map((cat) => (
+              {getL1Categories().map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
               ))}
             </select>
           </div>
+
+          {/* Category L2 */}
+          {getL2Categories(formData.categoryL1).length > 0 && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                중분류
+              </label>
+              <select
+                value={formData.categoryL2}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    categoryL2: e.target.value,
+                    categoryL3: "",
+                  })
+                }
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">선택안함</option>
+                {getL2Categories(formData.categoryL1).map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Category L3 */}
+          {formData.categoryL2 &&
+            getL3Categories(formData.categoryL1, formData.categoryL2).length > 0 && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  소분류
+                </label>
+                <select
+                  value={formData.categoryL3}
+                  onChange={(e) =>
+                    setFormData({ ...formData, categoryL3: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">선택안함</option>
+                  {getL3Categories(formData.categoryL1, formData.categoryL2).map(
+                    (cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+            )}
 
           {/* Note */}
           <div className="mb-6">
@@ -235,15 +281,15 @@ export default function ManualPage() {
 
         {/* Help */}
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-semibold text-blue-900 mb-3">💡 팁</h3>
+          <h3 className="font-semibold text-blue-900 mb-3">팁</h3>
           <ul className="text-sm text-blue-800 space-y-2">
-            <li>• 월급, 보너스 등 수익은 양수로 입력하세요</li>
-            <li>• 대출금 상환, 보험료 등 지출은 음수로 입력할 수 있습니다</li>
-            <li>• 카테고리는 자동으로 분류되지만 수정할 수 있습니다</li>
-            <li>• 입력된 거래는 &quot;거래 내역&quot; 페이지에서 관리할 수 있습니다</li>
+            <li>- 월급, 보너스 등 수익은 양수로 입력하세요</li>
+            <li>- 대출금 상환, 보험료 등 지출은 음수로 입력할 수 있습니다</li>
+            <li>- 카테고리는 대분류 &gt; 중분류 &gt; 소분류 3단계로 선택 가능합니다</li>
+            <li>- 입력된 거래는 &quot;거래 내역&quot; 페이지에서 관리할 수 있습니다</li>
           </ul>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
