@@ -19,7 +19,7 @@ async function bulkImport() {
   let skippedCount = 0;
 
   for (const filePath of files) {
-    const fileName = path.basename(filePath);
+    const fileName = path.basename(filePath).normalize("NFC");
 
     try {
       const buffer = fs.readFileSync(filePath);

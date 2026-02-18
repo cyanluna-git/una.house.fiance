@@ -10,7 +10,9 @@ import { parseWooriCard } from "./woori";
 export type CardCompany = "국민카드" | "농협카드" | "현대카드" | "롯데카드" | "신한카드" | "하나카드" | "우리카드";
 
 export function detectCardCompany(fileName: string): CardCompany {
-  const lower = fileName.toLowerCase();
+  // macOS uses NFD (decomposed) Unicode for Korean filenames
+  // Source code literals are NFC (composed) - normalize to match
+  const lower = fileName.normalize("NFC").toLowerCase();
 
   if (lower.includes("국민")) return "국민카드";
   if (lower.includes("농협")) return "농협카드";
