@@ -1,0 +1,50 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { transactions } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
+    const body = await request.json();
+
+    const { category, note, merchant } = body;
+
+    const updates: Record<string, any> = {};
+    if (category !== undefined) updates.category = category;
+    if (note !== undefined) updates.note = note;
+    if (merchant !== undefined) updates.merchant = merchant;
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: "수정 항목이 없습니다" }, { status: 400 });
+    }
+
+    db.update(transactions).set(updates).where(eq(transactions.id, id)).run();
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("PATCH /api/transactions/[id] error:", error);
+    return NextResponse.json({ error: "수정 실패" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
+
+    db.delete(transactions).where(eq(transactions.id, id)).run();
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("DELETE /api/transactions/[id] error:", error);
+    return NextResponse.json({ error: "삭제 실패" }, { status: 500 });
+  }
+}
