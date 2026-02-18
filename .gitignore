@@ -1,35 +1,51 @@
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+.pnp
 .pnp.js
 .yarn/install-state.gz
 
-# testing
-/coverage
-
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
-/build
+build/
+dist/
 
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env*.local
-
-# db
+# database
 finance.db
 finance.db-shm
 finance.db-wal
 
 # drizzle
 /drizzle
+
+# env files
+.env
+.env*.local
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# misc
+*.pem
+/coverage
+
+# workthrough build
+workthrough/.vitepress/cache/
+workthrough/.vitepress/dist/
+workthrough/node_modules/
+
+# claude
+.claude/

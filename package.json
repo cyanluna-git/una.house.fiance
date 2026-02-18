@@ -9,7 +9,8 @@
     "lint": "next lint",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
-    "import": "ts-node scripts/bulk-import.ts"
+    "import": "tsx scripts/bulk-import.ts",
+    "test:parsers": "tsx scripts/test-parsers.ts"
   },
   "dependencies": {
     "react": "^18.3.0",
@@ -21,6 +22,9 @@
     "xlsx": "^0.18.5",
     "clsx": "^2.0.0",
     "tailwind-merge": "^2.2.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["better-sqlite3", "esbuild", "sharp", "unrs-resolver"]
   },
   "devDependencies": {
     "typescript": "^5.3.3",
@@ -34,6 +38,6 @@
     "eslint": "^8.55.0",
     "eslint-config-next": "^15.0.0",
     "drizzle-kit": "^0.20.0",
-    "ts-node": "^10.9.2"
+    "tsx": "^4.7.0"
   }
 }

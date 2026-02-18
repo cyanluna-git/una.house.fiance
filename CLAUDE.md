@@ -19,21 +19,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Start development server (port 3101)
-npm run dev
+pnpm dev
 
 # Build for production
-npm run build
+pnpm build
 
 # Run linter
-npm run lint
+pnpm lint
 
 # Bulk import all Excel files from OneDrive (requires DB initialization)
-npm run import
+pnpm import
+
+# Test all 7 card company parsers
+pnpm test:parsers
 
 # Database migrations (if needed)
-npm run db:push
-npm run db:generate
+pnpm db:push
+pnpm db:generate
 ```
+
+**Package Manager**: pnpm (not npm). Use `pnpm add <pkg>` to install new dependencies.
 
 ---
 
@@ -60,7 +65,7 @@ The 7 card companies use different and evolving statement formats:
 ### Database Schema
 - **transactions** table: Core transaction record with unified fields (date, cardCompany, merchant, amount, category, etc.)
 - **categoryRules** table: Keyword rules for automatic categorization
-- Both tables auto-created by Drizzle ORM on first API call
+- Both tables auto-created via `sqlite.exec(CREATE TABLE IF NOT EXISTS ...)` in `src/lib/db/index.ts`
 
 ---
 
@@ -120,17 +125,12 @@ Higher priority rules match first. Rules are applied at import-time via `categor
 
 ## Database Initialization
 
-⚠️ **Important**: Tables are NOT pre-created. They're created by Drizzle ORM on first API call.
-
-If `finance.db` exists but is empty:
-1. Run `npm run dev` to start server
-2. Make any API call (e.g., visit `/import` page)
-3. Tables auto-create on first `db.select()` or `db.insert()` call
+Tables are auto-created via `CREATE TABLE IF NOT EXISTS` in `src/lib/db/index.ts` when the DB module is first imported.
 
 If you need to reset:
 ```bash
 rm finance.db  # Delete file
-npm run dev    # Restart - new empty DB will be created
+pnpm dev    # Restart - new empty DB will be created
 ```
 
 ---
@@ -193,7 +193,7 @@ No automated tests currently exist. For manual testing:
 ## Port Configuration
 
 Development server runs on **port 3101** (set in `package.json` dev script).
-Change with: `npm run dev -- -p 3102`
+Change with: `pnpm dev -p 3102`
 
 ---
 
