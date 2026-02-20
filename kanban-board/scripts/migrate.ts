@@ -16,7 +16,7 @@ const kanbanDir = process.argv[2] || path.resolve(__dirname, "../../kanban");
 const projectName =
   process.argv[3] || path.basename(path.resolve(kanbanDir, ".."));
 
-// 프로젝트 로컬 DB: {project_root}/.claude/kanban.db
+// Project-local DB: {project_root}/.claude/kanban.db
 const projectRoot = path.resolve(__dirname, "../..");
 const dbPath = path.join(projectRoot, ".claude", "kanban.db");
 
@@ -40,11 +40,15 @@ db.exec(`
     project TEXT NOT NULL,
     title TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'todo',
-    priority TEXT NOT NULL DEFAULT '중간',
+    priority TEXT NOT NULL DEFAULT 'medium',
     description TEXT,
+    plan TEXT,
+    implementation_notes TEXT,
     tags TEXT,
+    review_comments TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     started_at TEXT,
+    reviewed_at TEXT,
     completed_at TEXT
   );
 `);
@@ -55,10 +59,12 @@ function parseMd(filePath: string) {
   const titleMatch = content.match(/^#\s+(.+)$/m);
   const title = titleMatch ? titleMatch[1].trim() : path.basename(filePath, ".md");
 
-  const priorityMatch = content.match(/##\s*우선순위[:\s]*(.+)$/m);
-  const priority = priorityMatch ? priorityMatch[1].trim() : "중간";
+  const priorityMatch = content.match(/##\s*(?:Priority|우선순위)[:\s]*(.+)$/m);
+  const rawPriority = priorityMatch ? priorityMatch[1].trim() : "medium";
+  const priorityMap: Record<string, string> = { "높음": "high", "중간": "medium", "낮음": "low" };
+  const priority = priorityMap[rawPriority] || rawPriority;
 
-  const dateMatch = content.match(/##\s*완료일\s*\n(.+)/);
+  const dateMatch = content.match(/##\s*(?:Completed|완료일)\s*\n(.+)/);
   const completedAt = dateMatch ? dateMatch[1].trim() : null;
 
   return { title, priority, description: content, completedAt };
@@ -71,7 +77,7 @@ const insert = db.prepare(`
 
 let count = 0;
 
-for (const status of ["todo", "inprogress", "done"]) {
+for (const status of ["todo", "inprogress", "review", "done"]) {
   const dir = path.join(kanbanDir, status);
   if (!fs.existsSync(dir)) continue;
 

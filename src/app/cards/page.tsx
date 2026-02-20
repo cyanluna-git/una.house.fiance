@@ -47,6 +47,16 @@ const companyBadge = (company: string) => {
   return colors[company] || "bg-gray-100 text-gray-700";
 };
 
+// Format number with commas for display, strip non-digits on change
+function formatCurrency(value: string): string {
+  const num = value.replace(/[^\d]/g, "");
+  if (!num) return "";
+  return Number(num).toLocaleString();
+}
+function rawNumber(value: string): string {
+  return value.replace(/[^\d]/g, "");
+}
+
 const emptyForm = {
   cardCompany: "국민카드",
   cardName: "",
@@ -71,11 +81,13 @@ export default function CardsPage() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [usageMonth, setUsageMonth] = useState<string>("");
 
   const fetchCards = useCallback(async () => {
     const res = await fetch("/api/cards");
     const json = await res.json();
     setCards(json.data || []);
+    if (json.usageMonth) setUsageMonth(json.usageMonth);
   }, []);
 
   useEffect(() => {
@@ -89,6 +101,16 @@ export default function CardsPage() {
   const inactiveCards = cards.filter((c) => !c.isActive);
   const totalAnnualFee = activeCards.reduce((s, c) => s + (c.annualFee || 0), 0);
   const totalMonthlyUsage = activeCards.reduce((s, c) => s + c.monthlyUsage, 0);
+
+  // Format usage month label (e.g., "2026-01" → "1월")
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const isCurrentMonth = usageMonth === currentMonth;
+  const usageMonthLabel = usageMonth
+    ? isCurrentMonth
+      ? "이번달"
+      : `${parseInt(usageMonth.split("-")[1])}월`
+    : "이번달";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -256,9 +278,10 @@ export default function CardsPage() {
             연회비 (원)
           </label>
           <input
-            type="number"
-            value={data.annualFee}
-            onChange={(e) => setData({ ...data, annualFee: e.target.value })}
+            type="text"
+            inputMode="numeric"
+            value={formatCurrency(data.annualFee)}
+            onChange={(e) => setData({ ...data, annualFee: rawNumber(e.target.value) })}
             placeholder="0"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
@@ -268,10 +291,11 @@ export default function CardsPage() {
             월 실적 기준 (원)
           </label>
           <input
-            type="number"
-            value={data.monthlyTarget}
-            onChange={(e) => setData({ ...data, monthlyTarget: e.target.value })}
-            placeholder="300000"
+            type="text"
+            inputMode="numeric"
+            value={formatCurrency(data.monthlyTarget)}
+            onChange={(e) => setData({ ...data, monthlyTarget: rawNumber(e.target.value) })}
+            placeholder="300,000"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
         </div>
@@ -281,12 +305,13 @@ export default function CardsPage() {
             월 할인한도 (원)
           </label>
           <input
-            type="number"
-            value={data.monthlyDiscountLimit}
+            type="text"
+            inputMode="numeric"
+            value={formatCurrency(data.monthlyDiscountLimit)}
             onChange={(e) =>
-              setData({ ...data, monthlyDiscountLimit: e.target.value })
+              setData({ ...data, monthlyDiscountLimit: rawNumber(e.target.value) })
             }
-            placeholder="50000"
+            placeholder="50,000"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
         </div>
@@ -407,7 +432,7 @@ export default function CardsPage() {
             </div>
             <div className="text-right min-w-[140px]">
               <div className="text-sm font-bold text-slate-800">
-                이번달 {card.monthlyUsage.toLocaleString()}원
+                {usageMonthLabel} {card.monthlyUsage.toLocaleString()}원
               </div>
               {!isInactive && card.monthlyTarget && (
                 <div className="text-xs text-slate-500">
@@ -550,7 +575,7 @@ export default function CardsPage() {
           </div>
         </div>
         <div className="bg-white rounded-xl shadow p-4 border-l-4 border-emerald-500">
-          <div className="text-sm text-slate-500">이번달 총 사용</div>
+          <div className="text-sm text-slate-500">{usageMonthLabel} 총 사용</div>
           <div className="text-xl font-bold text-slate-800">
             {totalMonthlyUsage.toLocaleString()}원
           </div>

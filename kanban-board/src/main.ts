@@ -5,15 +5,20 @@ interface Task {
   status: string;
   priority: string;
   description: string | null;
+  plan: string | null;
+  implementation_notes: string | null;
   tags: string | null;
+  review_comments: string | null;
   created_at: string;
   started_at: string | null;
+  reviewed_at: string | null;
   completed_at: string | null;
 }
 
 interface Board {
   todo: Task[];
   inprogress: Task[];
+  review: Task[];
   done: Task[];
   projects: string[];
 }
@@ -21,15 +26,16 @@ interface Board {
 const COLUMNS = [
   { key: "todo", label: "To Do", icon: "📋" },
   { key: "inprogress", label: "In Progress", icon: "🔨" },
+  { key: "review", label: "Review", icon: "🔍" },
   { key: "done", label: "Done", icon: "✅" },
 ];
 
 let currentProject: string | null = null;
 
 function priorityClass(priority: string): string {
-  if (priority.includes("높음")) return "high";
-  if (priority.includes("중간")) return "medium";
-  if (priority.includes("낮음")) return "low";
+  if (priority === "high") return "high";
+  if (priority === "medium") return "medium";
+  if (priority === "low") return "low";
   return "";
 }
 
@@ -47,11 +53,20 @@ function timeAgo(dateStr: string): string {
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const days = Math.floor(diffMs / 86400000);
-  if (days === 0) return "오늘";
-  if (days === 1) return "어제";
-  if (days < 7) return `${days}일 전`;
-  if (days < 30) return `${Math.floor(days / 7)}주 전`;
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
   return dateStr.slice(0, 10);
+}
+
+function parseReviewComments(task: Task): any[] {
+  if (!task.review_comments) return [];
+  try {
+    return JSON.parse(task.review_comments);
+  } catch {
+    return [];
+  }
 }
 
 function renderCard(task: Task): string {
@@ -71,6 +86,17 @@ function renderCard(task: Task): string {
       ? `<span class="badge project">${task.project}</span>`
       : "";
 
+  // Review status badge
+  const reviewComments = parseReviewComments(task);
+  const lastReview = reviewComments.length > 0 ? reviewComments[reviewComments.length - 1] : null;
+  const reviewBadge = lastReview
+    ? `<span class="badge ${lastReview.status === 'approved' ? 'review-approved' : 'review-changes'}">${
+        lastReview.status === 'approved' ? 'Approved' : 'Changes Requested'
+      }</span>`
+    : task.status === 'review'
+      ? '<span class="badge review-pending">Awaiting Review</span>'
+      : '';
+
   const tags = parseTags(task.tags)
     .map((t) => `<span class="tag">${t}</span>`)
     .join("");
@@ -84,6 +110,7 @@ function renderCard(task: Task): string {
       <div class="card-header">
         <span class="card-id">#${task.id}</span>
         ${priorityBadge}
+        ${reviewBadge}
       </div>
       <div class="card-title">${task.title}</div>
       ${desc ? `<div class="card-desc">${desc}</div>` : ""}
@@ -103,14 +130,20 @@ function renderColumn(
   tasks: Task[]
 ): string {
   const cardsHtml = tasks.map(renderCard).join("");
+  const addBtn = key === "todo"
+    ? `<button class="add-card-btn" id="add-card-btn" title="Add card">+</button>`
+    : "";
   return `
     <div class="column ${key}" data-column="${key}">
       <div class="column-header">
         <span>${icon} ${label}</span>
-        <span class="count">${tasks.length}</span>
+        <div class="column-header-right">
+          ${addBtn}
+          <span class="count">${tasks.length}</span>
+        </div>
       </div>
       <div class="column-body" data-column="${key}">
-        ${cardsHtml || '<div class="empty">비어있음</div>'}
+        ${cardsHtml || '<div class="empty">No items</div>'}
       </div>
     </div>
   `;
@@ -133,10 +166,32 @@ function simpleMarkdownToHtml(md: string): string {
     .replace(/\n/g, "<br>");
 }
 
+function renderLifecycleSection(
+  phase: string,
+  icon: string,
+  colorClass: string,
+  content: string | null,
+  isActive: boolean
+): string {
+  if (!content && !isActive) return '';
+  const body = content
+    ? simpleMarkdownToHtml(content)
+    : `<span class="phase-empty">Not yet documented</span>`;
+  return `
+    <div class="lifecycle-phase ${colorClass} ${isActive ? 'active' : ''}">
+      <div class="phase-header">
+        <span class="phase-icon">${icon}</span>
+        <span class="phase-label">${phase}</span>
+      </div>
+      <div class="phase-body">${body}</div>
+    </div>
+  `;
+}
+
 async function showTaskDetail(id: number) {
   const overlay = document.getElementById("modal-overlay")!;
   const content = document.getElementById("modal-content")!;
-  content.innerHTML = '<div style="color:#94a3b8">로딩 중...</div>';
+  content.innerHTML = '<div style="color:#94a3b8">Loading...</div>';
   overlay.classList.remove("hidden");
 
   try {
@@ -149,32 +204,102 @@ async function showTaskDetail(id: number) {
       : "";
 
     const meta = [
-      `<strong>프로젝트:</strong> ${task.project}`,
-      `<strong>상태:</strong> ${task.status}`,
-      `<strong>우선순위:</strong> ${task.priority}`,
-      `<strong>생성일:</strong> ${task.created_at?.slice(0, 10) || "-"}`,
+      `<strong>Project:</strong> ${task.project}`,
+      `<strong>Status:</strong> ${task.status}`,
+      `<strong>Priority:</strong> ${task.priority}`,
+      `<strong>Created:</strong> ${task.created_at?.slice(0, 10) || "-"}`,
       task.started_at
-        ? `<strong>시작일:</strong> ${task.started_at.slice(0, 10)}`
+        ? `<strong>Started:</strong> ${task.started_at.slice(0, 10)}`
+        : "",
+      task.reviewed_at
+        ? `<strong>Reviewed:</strong> ${task.reviewed_at.slice(0, 10)}`
         : "",
       task.completed_at
-        ? `<strong>완료일:</strong> ${task.completed_at.slice(0, 10)}`
+        ? `<strong>Completed:</strong> ${task.completed_at.slice(0, 10)}`
         : "",
     ]
       .filter(Boolean)
       .join(" &nbsp;|&nbsp; ");
 
-    const descHtml = task.description
-      ? simpleMarkdownToHtml(task.description)
-      : '<span style="color:#64748b">설명 없음</span>';
+    // Determine current active phase
+    const statusPhase: Record<string, number> = {
+      todo: 0, inprogress: 1, review: 3, done: 4,
+    };
+    const currentPhase = statusPhase[task.status] ?? 0;
+
+    // Phase 1: Requirements
+    const requirementSection = renderLifecycleSection(
+      'Requirements', '📋', 'phase-requirement',
+      task.description, currentPhase === 0
+    );
+
+    // Phase 2: Plan
+    const planSection = renderLifecycleSection(
+      'Plan', '🗺️', 'phase-plan',
+      task.plan, currentPhase === 1 && !task.plan
+    );
+
+    // Phase 3: Implementation
+    const implSection = renderLifecycleSection(
+      'Implementation', '🔨', 'phase-impl',
+      task.implementation_notes, currentPhase === 1 && !!task.plan
+    );
+
+    // Phase 4: Review
+    const reviewComments = parseReviewComments(task);
+    const reviewContent = reviewComments.length > 0
+      ? reviewComments.map((rc: any) => `
+          <div class="review-entry ${rc.status}">
+            <div class="review-header">
+              <span class="badge ${rc.status === 'approved' ? 'review-approved' : 'review-changes'}">
+                ${rc.status === 'approved' ? 'Approved' : 'Changes Requested'}
+              </span>
+              <span class="review-meta">${rc.reviewer || ''} &middot; ${rc.timestamp?.slice(0, 16) || ''}</span>
+            </div>
+            <div class="review-comment">${simpleMarkdownToHtml(rc.comment || '')}</div>
+          </div>
+        `).join('')
+      : null;
+    const reviewSection = reviewContent || currentPhase === 3
+      ? renderLifecycleSection(
+          'Review', '🔍', 'phase-review',
+          null, currentPhase === 3
+        ).replace(
+          '<div class="phase-body">',
+          `<div class="phase-body">${reviewContent || ''}`
+        ).replace(
+          '<span class="phase-empty">Not yet documented</span>',
+          reviewContent ? '' : '<span class="phase-empty">Awaiting review</span>'
+        )
+      : '';
+
+    // Progress bar
+    const phases = ['Requirements', 'Plan', 'Implementation', 'Review', 'Done'];
+    const progressHtml = `
+      <div class="lifecycle-progress">
+        ${phases.map((p, i) => `
+          <div class="progress-step ${i < currentPhase ? 'completed' : ''} ${i === currentPhase ? 'current' : ''}">
+            <div class="step-dot"></div>
+            <span class="step-label">${p}</span>
+          </div>
+        `).join('<div class="progress-line"></div>')}
+      </div>
+    `;
 
     content.innerHTML = `
       <h1>#${task.id} ${task.title}</h1>
       <div class="modal-meta">${meta}</div>
       ${tagsHtml}
-      <div class="modal-body">${descHtml}</div>
+      ${progressHtml}
+      <div class="lifecycle-sections">
+        ${requirementSection}
+        ${planSection}
+        ${implSection}
+        ${reviewSection}
+      </div>
     `;
   } catch {
-    content.innerHTML = '<div style="color:#ef4444">불러올 수 없습니다</div>';
+    content.innerHTML = '<div style="color:#ef4444">Failed to load</div>';
   }
 }
 
@@ -204,12 +329,12 @@ async function loadBoard() {
         col.key,
         col.label,
         col.icon,
-        data[col.key as keyof Pick<Board, "todo" | "inprogress" | "done">]
+        data[col.key as keyof Pick<Board, "todo" | "inprogress" | "review" | "done">]
       )
     ).join("");
 
     // Count summary
-    const total = data.todo.length + data.inprogress.length + data.done.length;
+    const total = data.todo.length + data.inprogress.length + data.review.length + data.done.length;
     document.getElementById("count-summary")!.textContent =
       `${data.done.length}/${total} completed`;
 
@@ -223,10 +348,20 @@ async function loadBoard() {
 
     // Drag & Drop
     setupDragAndDrop();
+
+    // Add card button
+    const addBtn = document.getElementById("add-card-btn");
+    if (addBtn) {
+      addBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        document.getElementById("add-card-overlay")!.classList.remove("hidden");
+        (document.getElementById("add-title") as HTMLInputElement).focus();
+      });
+    }
   } catch {
     board.innerHTML = `
       <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:#ef4444;font-size:0.9rem;padding:48px">
-        ~/.claude/kanban.db 를 찾을 수 없습니다
+        Cannot find .claude/kanban.db
       </div>
     `;
   }
@@ -250,7 +385,7 @@ function renderProjectFilter(projects: string[]) {
 
   container.innerHTML = `
     <select id="project-select">
-      <option value="">전체 프로젝트</option>
+      <option value="">All Projects</option>
       ${options}
     </select>
   `;
@@ -298,6 +433,15 @@ function setupDragAndDrop() {
 // Init
 loadBoard();
 
+// Auto-refresh every 10 seconds (pause when modal is open)
+setInterval(() => {
+  const detailOpen = !document.getElementById("modal-overlay")!.classList.contains("hidden");
+  const addOpen = !document.getElementById("add-card-overlay")!.classList.contains("hidden");
+  if (!detailOpen && !addOpen) {
+    loadBoard();
+  }
+}, 10000);
+
 // Refresh button
 document.getElementById("refresh-btn")!.addEventListener("click", loadBoard);
 
@@ -313,5 +457,41 @@ document.getElementById("modal-overlay")!.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     document.getElementById("modal-overlay")!.classList.add("hidden");
+    document.getElementById("add-card-overlay")!.classList.add("hidden");
   }
+});
+
+// Add card modal
+const addCardOverlay = document.getElementById("add-card-overlay")!;
+document.getElementById("add-card-close")!.addEventListener("click", () => {
+  addCardOverlay.classList.add("hidden");
+});
+addCardOverlay.addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) {
+    addCardOverlay.classList.add("hidden");
+  }
+});
+
+document.getElementById("add-card-form")!.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const title = (document.getElementById("add-title") as HTMLInputElement).value.trim();
+  if (!title) return;
+
+  const priority = (document.getElementById("add-priority") as HTMLSelectElement).value;
+  const description = (document.getElementById("add-description") as HTMLTextAreaElement).value.trim() || null;
+  const tagsRaw = (document.getElementById("add-tags") as HTMLInputElement).value.trim();
+  const tags = tagsRaw ? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean) : null;
+
+  const project = currentProject || undefined;
+
+  await fetch("/api/task", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, priority, description, tags, project }),
+  });
+
+  // Reset form and close
+  (document.getElementById("add-card-form") as HTMLFormElement).reset();
+  addCardOverlay.classList.add("hidden");
+  loadBoard();
 });

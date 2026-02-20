@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const allTrips = db.select().from(trips).orderBy(desc(trips.startDate)).all();
 
-    // Attach expense summary per trip
+    // Attach expense summary, category breakdown, and transactions per trip
     const data = allTrips.map((trip) => {
       const expenses = db
         .select({ total: sql<number>`COALESCE(SUM(amount), 0)`, count: sql<number>`COUNT(*)` })
@@ -15,10 +15,38 @@ export async function GET() {
         .where(eq(transactions.tripId, trip.id))
         .get();
 
+      const categoryBreakdown = db
+        .select({
+          category: transactions.categoryL2,
+          total: sql<number>`COALESCE(SUM(amount), 0)`,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(transactions)
+        .where(eq(transactions.tripId, trip.id))
+        .groupBy(transactions.categoryL2)
+        .orderBy(sql`SUM(amount) DESC`)
+        .all();
+
+      const txList = db
+        .select({
+          id: transactions.id,
+          date: transactions.date,
+          merchant: transactions.merchant,
+          amount: transactions.amount,
+          categoryL2: transactions.categoryL2,
+          cardCompany: transactions.cardCompany,
+        })
+        .from(transactions)
+        .where(eq(transactions.tripId, trip.id))
+        .orderBy(desc(transactions.date))
+        .all();
+
       return {
         ...trip,
         totalExpense: expenses?.total ?? 0,
         transactionCount: expenses?.count ?? 0,
+        categoryBreakdown,
+        transactions: txList,
       };
     });
 

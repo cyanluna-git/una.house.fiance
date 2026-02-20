@@ -12,7 +12,7 @@ export async function PATCH(
     const id = parseInt(idStr);
     const body = await request.json();
 
-    const { categoryL1, categoryL2, categoryL3, necessity, familyMemberId, tripId, isCompanyExpense, note, merchant } = body;
+    const { categoryL1, categoryL2, categoryL3, necessity, familyMemberId, tripId, isCompanyExpense, note, merchant, date } = body;
 
     const updates: Record<string, any> = {};
     if (categoryL1 !== undefined) updates.categoryL1 = categoryL1;
@@ -24,6 +24,7 @@ export async function PATCH(
     if (isCompanyExpense !== undefined) updates.isCompanyExpense = isCompanyExpense;
     if (note !== undefined) updates.note = note;
     if (merchant !== undefined) updates.merchant = merchant;
+    if (date !== undefined) updates.date = date;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "수정 항목이 없습니다" }, { status: 400 });

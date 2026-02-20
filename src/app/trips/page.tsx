@@ -1,6 +1,32 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
+
+const TripCategoryChart = dynamic(
+  () => import("@/components/TripCategoryChart"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-center py-6 text-slate-400 text-sm">차트 로딩 중...</div>
+    ),
+  }
+);
+
+interface TripTransaction {
+  id: number;
+  date: string;
+  merchant: string;
+  amount: number;
+  categoryL2: string | null;
+  cardCompany: string;
+}
+
+interface CategoryBreakdown {
+  category: string | null;
+  total: number;
+  count: number;
+}
 
 interface Trip {
   id: number;
@@ -12,6 +38,8 @@ interface Trip {
   note: string | null;
   totalExpense: number;
   transactionCount: number;
+  categoryBreakdown: CategoryBreakdown[];
+  transactions: TripTransaction[];
 }
 
 const emptyForm = {
@@ -30,6 +58,11 @@ export default function TripsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [modalData, setModalData] = useState<{
+    tripName: string;
+    category: string;
+    transactions: TripTransaction[];
+  } | null>(null);
 
   const fetchTrips = useCallback(async () => {
     const res = await fetch("/api/trips");
@@ -40,6 +73,17 @@ export default function TripsPage() {
   useEffect(() => {
     fetchTrips();
   }, [fetchTrips]);
+
+  // ESC key to close modal
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setModalData(null);
+    }
+    if (modalData) {
+      document.addEventListener("keydown", handleKeyDown);
+      return () => document.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [modalData]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,6 +125,17 @@ export default function TripsPage() {
       endDate: trip.endDate || "",
       budget: trip.budget ? String(trip.budget) : "",
       note: trip.note || "",
+    });
+  }
+
+  function openCategoryModal(trip: Trip, category: string) {
+    const filtered = trip.transactions.filter(
+      (t) => (t.categoryL2 || "미분류") === category
+    );
+    setModalData({
+      tripName: trip.name,
+      category,
+      transactions: filtered.sort((a, b) => b.date.localeCompare(a.date)),
     });
   }
 
@@ -283,7 +338,11 @@ export default function TripsPage() {
                     <div className="bg-slate-200 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full ${
-                          budgetPct > 100 ? "bg-red-500" : budgetPct > 80 ? "bg-amber-500" : "bg-emerald-500"
+                          budgetPct > 100
+                            ? "bg-red-500"
+                            : budgetPct > 80
+                              ? "bg-amber-500"
+                              : "bg-emerald-500"
                         }`}
                         style={{ width: `${Math.min(budgetPct, 100)}%` }}
                       />
@@ -333,14 +392,24 @@ export default function TripsPage() {
                         </div>
                         <div>
                           <span className="text-slate-500">예산:</span>{" "}
-                          {trip.budget ? `${trip.budget.toLocaleString()}원` : "-"}
+                          {trip.budget
+                            ? `${trip.budget.toLocaleString()}원`
+                            : "-"}
                         </div>
                       </div>
                       {trip.note && (
                         <div className="text-sm text-slate-600 mb-4">
-                          <span className="text-slate-500">메모:</span> {trip.note}
+                          <span className="text-slate-500">메모:</span>{" "}
+                          {trip.note}
                         </div>
                       )}
+
+                      {/* Category Bar Chart */}
+                      <TripCategoryChart
+                        categoryBreakdown={trip.categoryBreakdown}
+                        onCategoryClick={(category) => openCategoryModal(trip, category)}
+                      />
+
                       <div className="flex gap-2">
                         <button
                           onClick={() => startEdit(trip)}
@@ -363,6 +432,95 @@ export default function TripsPage() {
           );
         })}
       </div>
+
+      {/* Detail Modal */}
+      {modalData && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"
+          onClick={() => setModalData(null)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-slate-800">
+                  {modalData.tripName} &gt; {modalData.category}
+                </h3>
+                <p className="text-sm text-slate-500">
+                  {modalData.transactions.length}건 ·{" "}
+                  {modalData.transactions
+                    .reduce((s, t) => s + t.amount, 0)
+                    .toLocaleString()}
+                  원
+                </p>
+              </div>
+              <button
+                onClick={() => setModalData(null)}
+                className="text-slate-400 hover:text-slate-600 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="overflow-y-auto flex-1">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 sticky top-0">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600">
+                      날짜
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600">
+                      결제수단
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600">
+                      가맹점
+                    </th>
+                    <th className="px-4 py-2 text-right font-medium text-slate-600">
+                      금액
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {modalData.transactions.map((tx) => (
+                    <tr
+                      key={tx.id}
+                      className="border-b border-slate-100 hover:bg-slate-50"
+                    >
+                      <td className="px-4 py-2 text-slate-600">{tx.date}</td>
+                      <td className="px-4 py-2 text-slate-600">
+                        {tx.cardCompany}
+                      </td>
+                      <td className="px-4 py-2 text-slate-800">
+                        {tx.merchant}
+                      </td>
+                      <td className="px-4 py-2 text-right font-medium">
+                        {tx.amount.toLocaleString()}원
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-between text-sm">
+              <span className="text-slate-600">
+                합계: {modalData.transactions.length}건
+              </span>
+              <span className="font-semibold text-slate-800">
+                {modalData.transactions
+                  .reduce((s, t) => s + t.amount, 0)
+                  .toLocaleString()}
+                원
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

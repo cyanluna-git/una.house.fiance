@@ -81,7 +81,7 @@ header h1 {
 /* Board Layout */
 main#board {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 0;
   height: calc(100vh - 57px);
 }
@@ -109,6 +109,12 @@ main#board {
   flex-shrink: 0;
 }
 
+.column-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .column-header .count {
   font-size: 0.75rem;
   font-weight: 500;
@@ -118,6 +124,28 @@ main#board {
   color: #94a3b8;
 }
 
+/* Add Card Button */
+.add-card-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #60a5fa;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  line-height: 1;
+}
+.add-card-btn:hover {
+  background: #334155;
+  border-color: #60a5fa;
+}
+
 .column.todo .column-header {
   color: #60a5fa;
   border-bottom-color: #3b82f6;
@@ -125,6 +153,10 @@ main#board {
 .column.inprogress .column-header {
   color: #fbbf24;
   border-bottom-color: #f59e0b;
+}
+.column.review .column-header {
+  color: #a78bfa;
+  border-bottom-color: #8b5cf6;
 }
 .column.done .column-header {
   color: #34d399;
@@ -251,6 +283,21 @@ main#board {
   color: #a5b4fc;
   text-transform: none;
 }
+.badge.review-pending {
+  background: #4c1d95;
+  color: #c4b5fd;
+  text-transform: none;
+}
+.badge.review-approved {
+  background: #064e3b;
+  color: #6ee7b7;
+  text-transform: none;
+}
+.badge.review-changes {
+  background: #7c2d12;
+  color: #fdba74;
+  text-transform: none;
+}
 
 /* Tags */
 .tag {
@@ -259,6 +306,11 @@ main#board {
   background: #0f172a;
   padding: 1px 6px;
   border-radius: 3px;
+}
+
+/* Review column - purple left border */
+.column.review .card {
+  border-left: 3px solid #8b5cf6;
 }
 
 /* Done column - slightly dimmed */
@@ -381,6 +433,135 @@ main#board {
   padding: 0;
 }
 
+/* Lifecycle Progress Bar */
+.lifecycle-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 16px 0 20px;
+  padding: 12px 0;
+}
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+.step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #334155;
+  border: 2px solid #475569;
+  transition: all 0.2s;
+}
+.progress-step.completed .step-dot {
+  background: #10b981;
+  border-color: #10b981;
+}
+.progress-step.current .step-dot {
+  background: #3b82f6;
+  border-color: #60a5fa;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+.step-label {
+  font-size: 0.65rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+.progress-step.completed .step-label {
+  color: #10b981;
+}
+.progress-step.current .step-label {
+  color: #60a5fa;
+  font-weight: 600;
+}
+.progress-line {
+  width: 32px;
+  height: 2px;
+  background: #334155;
+  margin-bottom: 18px;
+}
+
+/* Lifecycle Sections */
+.lifecycle-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lifecycle-phase {
+  border: 1px solid #334155;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.lifecycle-phase.active {
+  border-color: #475569;
+}
+.phase-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #0f172a;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+.phase-icon {
+  font-size: 0.9rem;
+}
+.phase-label {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.phase-requirement .phase-header { color: #60a5fa; }
+.phase-plan .phase-header { color: #fbbf24; }
+.phase-impl .phase-header { color: #f97316; }
+.phase-review .phase-header { color: #a78bfa; }
+
+.phase-body {
+  padding: 12px 14px;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+.phase-empty {
+  color: #475569;
+  font-style: italic;
+}
+
+/* Review entries inside lifecycle */
+.review-entry {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.review-entry.approved {
+  border-left: 3px solid #10b981;
+}
+.review-entry.changes_requested {
+  border-left: 3px solid #f97316;
+}
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.review-meta {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+.review-comment {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -396,7 +577,64 @@ main#board {
   background: #475569;
 }
 
+/* Add Card Form */
+.form-group {
+  margin-bottom: 14px;
+}
+.form-group label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.form-group input[type="text"],
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.form-group input[type="text"]:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+.form-group textarea {
+  resize: vertical;
+}
+.form-submit {
+  width: 100%;
+  padding: 10px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.form-submit:hover {
+  background: #2563eb;
+}
+
 /* Responsive */
+@media (max-width: 1024px) {
+  main#board {
+    grid-template-columns: 1fr 1fr;
+    height: auto;
+  }
+}
 @media (max-width: 768px) {
   main#board {
     grid-template-columns: 1fr;

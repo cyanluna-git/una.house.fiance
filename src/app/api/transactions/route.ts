@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       .insert(transactions)
       .values({
         date,
-        cardCompany: "수동입력",
+        cardCompany: body.cardCompany || "수동입력",
         merchant,
         amount,
         paymentType,

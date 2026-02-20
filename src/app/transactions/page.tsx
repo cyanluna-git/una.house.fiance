@@ -76,7 +76,11 @@ export default function TransactionsPage() {
         ...(filters.to && { to: filters.to }),
         ...(filters.categoryL1 && { categoryL1: filters.categoryL1 }),
         ...(filters.categoryL2 && { categoryL2: filters.categoryL2 }),
-        ...(filters.card && { cardId: filters.card }),
+        ...(filters.card && (
+          filters.card.startsWith("method:")
+            ? { card: filters.card.slice(7) }
+            : { cardId: filters.card }
+        )),
       });
 
       const response = await fetch(`/api/transactions?${params}`);
@@ -103,6 +107,7 @@ export default function TransactionsPage() {
   const handleEdit = (transaction: Transaction) => {
     setEditingId(transaction.id);
     setEditData({
+      date: transaction.date,
       categoryL1: transaction.categoryL1,
       categoryL2: transaction.categoryL2,
       categoryL3: transaction.categoryL3,
@@ -123,6 +128,7 @@ export default function TransactionsPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          date: editData.date,
           categoryL1: editData.categoryL1,
           categoryL2: editData.categoryL2,
           categoryL3: editData.categoryL3,
@@ -161,6 +167,13 @@ export default function TransactionsPage() {
   };
 
   const totalPages = Math.ceil(total / limit);
+
+  const NON_CARD_METHODS: Record<string, string> = {
+    "현금": "bg-green-100 text-green-700",
+    "계좌이체": "bg-blue-100 text-blue-700",
+    "자동이체": "bg-purple-100 text-purple-700",
+    "수동입력": "bg-slate-100 text-slate-600",
+  };
 
   function getCardDisplayName(tx: Transaction) {
     if (tx.cardId) {
@@ -244,7 +257,7 @@ export default function TransactionsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                카드
+                결제수단
               </label>
               <select
                 value={filters.card}
@@ -252,11 +265,19 @@ export default function TransactionsPage() {
                 className="w-full px-3 py-2 border border-slate-300 rounded"
               >
                 <option value="">모두</option>
-                {cardList.map((card) => (
-                  <option key={card.id} value={card.id}>
-                    {card.cardCompany} · {card.cardName}
-                  </option>
-                ))}
+                <optgroup label="결제수단">
+                  <option value="method:현금">현금</option>
+                  <option value="method:계좌이체">계좌이체</option>
+                  <option value="method:자동이체">자동이체</option>
+                  <option value="method:수동입력">수동입력 (기타)</option>
+                </optgroup>
+                <optgroup label="카드">
+                  {cardList.map((card) => (
+                    <option key={card.id} value={card.id}>
+                      {card.cardCompany} · {card.cardName}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
           </div>
@@ -275,7 +296,7 @@ export default function TransactionsPage() {
                   <thead className="bg-slate-100 border-b">
                     <tr>
                       <th className="px-4 py-3 text-left font-semibold">날짜</th>
-                      <th className="px-4 py-3 text-left font-semibold">카드</th>
+                      <th className="px-4 py-3 text-left font-semibold">결제수단</th>
                       <th className="px-4 py-3 text-left font-semibold">가맹점</th>
                       <th className="px-4 py-3 text-right font-semibold">금액</th>
                       <th className="px-4 py-3 text-left font-semibold">카테고리</th>
@@ -289,10 +310,31 @@ export default function TransactionsPage() {
                         key={tx.id}
                         className="border-b hover:bg-slate-50 transition"
                       >
-                        <td className="px-4 py-3">{tx.date}</td>
+                        <td className="px-4 py-3">
+                          {editingId === tx.id ? (
+                            <input
+                              type="date"
+                              value={editData.date || tx.date}
+                              onChange={(e) =>
+                                setEditData({ ...editData, date: e.target.value })
+                              }
+                              className="px-2 py-1 border border-slate-300 rounded text-sm w-[130px]"
+                            />
+                          ) : (
+                            tx.date
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-sm">
-                          <div className="text-slate-800 font-medium">{getCardDisplayName(tx).name}</div>
-                          <div className="text-xs text-slate-400">{getCardDisplayName(tx).company}</div>
+                          {NON_CARD_METHODS[tx.cardCompany] ? (
+                            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${NON_CARD_METHODS[tx.cardCompany]}`}>
+                              {tx.cardCompany}
+                            </span>
+                          ) : (
+                            <>
+                              <div className="text-slate-800 font-medium">{getCardDisplayName(tx).name}</div>
+                              <div className="text-xs text-slate-400">{getCardDisplayName(tx).company}</div>
+                            </>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           {editingId === tx.id ? (

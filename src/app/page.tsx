@@ -1,11 +1,14 @@
 'use client';
 
-import { Fragment, useEffect, useState, useMemo } from "react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
-  LineChart, Line,
-} from "recharts";
+import { Fragment, useEffect, useCallback, useState, useMemo } from "react";
+import dynamic from "next/dynamic";
+
+const DashboardCharts = dynamic(() => import("@/components/DashboardCharts"), {
+  ssr: false,
+  loading: () => (
+    <div className="text-center py-12 text-slate-400">차트 로딩 중...</div>
+  ),
+});
 
 interface Transaction {
   id: number;
@@ -50,12 +53,6 @@ interface FamilyMember {
   relation: string;
 }
 
-const COLORS = [
-  "#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6",
-  "#ec4899", "#06b6d4", "#f97316", "#6366f1", "#14b8a6",
-  "#e11d48", "#84cc16", "#0ea5e9", "#a855f7",
-];
-
 const NECESSITY_COLORS: Record<string, { label: string; color: string }> = {
   essential: { label: "필수", color: "#10b981" },
   discretionary: { label: "재량", color: "#f59e0b" },
@@ -70,6 +67,7 @@ export default function Home() {
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
   const [expandedL1, setExpandedL1] = useState<Set<string>>(new Set());
+  const [modalCategory, setModalCategory] = useState<{ l1: string; l2?: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -314,6 +312,29 @@ export default function Home() {
     });
   };
 
+  const modalTransactions = useMemo(() => {
+    if (!modalCategory) return [];
+    const txs = selectedMonth === "all"
+      ? allTransactions
+      : allTransactions.filter(t => t.date.startsWith(selectedMonth));
+    return txs
+      .filter(t => {
+        if ((t.categoryL1 || "기타") !== modalCategory.l1) return false;
+        if (modalCategory.l2) return (t.categoryL2 || "미분류") === modalCategory.l2;
+        return true;
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [modalCategory, allTransactions, selectedMonth]);
+
+  const closeModal = useCallback(() => setModalCategory(null), []);
+
+  useEffect(() => {
+    if (!modalCategory) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") closeModal(); };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [modalCategory, closeModal]);
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[50vh]">
@@ -403,7 +424,7 @@ export default function Home() {
         {/* Summary Cards Row 2: Sub Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow p-5 border border-slate-200">
-            <p className="text-sm text-slate-500">총 카드지출</p>
+            <p className="text-sm text-slate-500">총 지출</p>
             <p className="text-xl font-bold text-slate-900 mt-1">{dash.totalCardSpend.toLocaleString()}원</p>
           </div>
 
@@ -446,10 +467,12 @@ export default function Home() {
                     return (
                       <Fragment key={detail.l1}>
                         <tr
-                          className={`border-b border-slate-100 ${hasL2 ? "cursor-pointer hover:bg-slate-50" : ""} bg-slate-50/50`}
-                          onClick={() => hasL2 && toggleL1(detail.l1)}
+                          className="border-b border-slate-100 bg-slate-50/50"
                         >
-                          <td className="py-3 px-4 font-medium text-slate-900">
+                          <td
+                            className={`py-3 px-4 font-medium text-slate-900 ${hasL2 ? "cursor-pointer hover:text-blue-600" : ""}`}
+                            onClick={() => hasL2 && toggleL1(detail.l1)}
+                          >
                             {hasL2 && (
                               <span className="inline-block w-4 text-slate-400 mr-1">
                                 {isExpanded ? "▼" : "▶"}
@@ -458,8 +481,16 @@ export default function Home() {
                             {!hasL2 && <span className="inline-block w-4 mr-1" />}
                             {detail.l1}
                           </td>
-                          <td className="py-3 px-4 text-right text-slate-600">{detail.count}건</td>
-                          <td className="py-3 px-4 text-right font-medium text-slate-900">
+                          <td
+                            className="py-3 px-4 text-right text-slate-600 cursor-pointer hover:text-blue-600 hover:underline"
+                            onClick={() => setModalCategory({ l1: detail.l1 })}
+                          >
+                            {detail.count}건
+                          </td>
+                          <td
+                            className="py-3 px-4 text-right font-medium text-slate-900 cursor-pointer hover:text-blue-600 hover:underline"
+                            onClick={() => setModalCategory({ l1: detail.l1 })}
+                          >
                             {detail.total.toLocaleString()}원
                           </td>
                           <td className="py-3 px-4 text-right text-slate-600">
@@ -469,7 +500,11 @@ export default function Home() {
                           </td>
                         </tr>
                         {isExpanded && detail.l2Items.map((l2) => (
-                          <tr key={`${detail.l1}-${l2.name}`} className="border-b border-slate-50">
+                          <tr
+                            key={`${detail.l1}-${l2.name}`}
+                            className="border-b border-slate-50 cursor-pointer hover:bg-blue-50/50"
+                            onClick={() => setModalCategory({ l1: detail.l1, l2: l2.name })}
+                          >
                             <td className="py-2 px-4 pl-12 text-slate-500">└ {l2.name}</td>
                             <td className="py-2 px-4 text-right text-slate-400">{l2.count}건</td>
                             <td className="py-2 px-4 text-right text-slate-500">
@@ -500,199 +535,86 @@ export default function Home() {
           </div>
         )}
 
-        {/* Income vs Expense Chart (always all data) */}
-        {dash.incomeExpenseData.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">수입 vs 지출</h3>
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={dash.incomeExpenseData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(v) => v.substring(5)}
-                />
-                <YAxis tick={{ fontSize: 12 }} tickFormatter={formatAmount} />
-                <Tooltip
-                  formatter={(value, name) => [
-                    `${Number(value).toLocaleString()}원`,
-                    name === "income" ? "수입" : "지출",
-                  ]}
-                />
-                <Legend
-                  formatter={(value) => (value === "income" ? "수입" : "지출")}
-                />
-                <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-
-        {/* Charts Row 1: Monthly Bar + Category Pie */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">월별 지출</h3>
-            {dash.monthlyData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dash.monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={(v) => v.substring(5)}
-                  />
-                  <YAxis tick={{ fontSize: 12 }} tickFormatter={formatAmount} />
-                  <Tooltip
-                    formatter={(value) => [`${Number(value).toLocaleString()}원`, "지출"]}
-                  />
-                  <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-slate-500 text-center py-12">데이터가 없습니다</p>
-            )}
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              카테고리별 지출
-              {selectedMonth !== "all" && (
-                <span className="text-sm font-normal text-slate-500 ml-2">
-                  ({selectedMonth.replace("-", ".")})
-                </span>
-              )}
-            </h3>
-            {dash.categoryData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={dash.categoryData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    dataKey="value"
-                    label={({ name, percent }) =>
-                      `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
-                    }
-                    labelLine={{ strokeWidth: 1 }}
-                  >
-                    {dash.categoryData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => [`${Number(value).toLocaleString()}원`]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-slate-500 text-center py-12">데이터가 없습니다</p>
-            )}
-          </div>
-        </div>
-
-        {/* Charts Row 2: Necessity Pie + Family Bar */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              필수 / 재량 비율
-              {selectedMonth !== "all" && (
-                <span className="text-sm font-normal text-slate-500 ml-2">
-                  ({selectedMonth.replace("-", ".")})
-                </span>
-              )}
-            </h3>
-            {dash.necessityData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={dash.necessityData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    dataKey="value"
-                    label={({ name, percent }) =>
-                      `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
-                    }
-                    labelLine={{ strokeWidth: 1 }}
-                  >
-                    {dash.necessityData.map((item, i) => (
-                      <Cell key={i} fill={item.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => [`${Number(value).toLocaleString()}원`]}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-slate-500 text-center py-12">데이터가 없습니다</p>
-            )}
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              구성원별 지출
-              {selectedMonth !== "all" && (
-                <span className="text-sm font-normal text-slate-500 ml-2">
-                  ({selectedMonth.replace("-", ".")})
-                </span>
-              )}
-            </h3>
-            {dash.familySpendData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dash.familySpendData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={formatAmount} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={120} />
-                  <Tooltip
-                    formatter={(value) => [`${Number(value).toLocaleString()}원`, "지출"]}
-                  />
-                  <Bar dataKey="value" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-slate-500 text-center py-12">데이터가 없습니다</p>
-            )}
-          </div>
-        </div>
-
-        {/* Trend Line Chart (always all data) */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">카테고리별 월별 트렌드</h3>
-          {dash.trendData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={dash.trendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(v) => v.substring(5)}
-                />
-                <YAxis tick={{ fontSize: 12 }} tickFormatter={formatAmount} />
-                <Tooltip
-                  formatter={(value, name) => [`${Number(value).toLocaleString()}원`, name]}
-                />
-                <Legend />
-                {dash.trendCategories.map((cat, i) => (
-                  <Line
-                    key={cat}
-                    type="monotone"
-                    dataKey={cat}
-                    stroke={COLORS[i % COLORS.length]}
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-slate-500 text-center py-12">데이터가 없습니다</p>
-          )}
-        </div>
+        {/* Charts (dynamically loaded - Recharts code-split) */}
+        <DashboardCharts
+          incomeExpenseData={dash.incomeExpenseData}
+          monthlyData={dash.monthlyData}
+          categoryData={dash.categoryData}
+          necessityData={dash.necessityData}
+          familySpendData={dash.familySpendData}
+          trendData={dash.trendData}
+          trendCategories={dash.trendCategories}
+          selectedMonth={selectedMonth}
+        />
       </div>
+
+      {/* Category Transaction Detail Modal */}
+      {modalCategory && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"
+          onClick={closeModal}
+        >
+          <div
+            className="bg-white rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  {modalCategory.l1}
+                  {modalCategory.l2 && (
+                    <span className="text-slate-400 font-normal"> &gt; {modalCategory.l2}</span>
+                  )}
+                </h3>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  {modalTransactions.length}건 &middot; {modalTransactions.reduce((s, t) => s + Math.abs(t.amount), 0).toLocaleString()}원
+                </p>
+              </div>
+              <button
+                onClick={closeModal}
+                className="text-slate-400 hover:text-slate-600 text-2xl leading-none px-2"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="overflow-y-auto flex-1 px-6">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-white">
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-2 pr-2 text-slate-500 font-medium">날짜</th>
+                    <th className="text-left py-2 pr-2 text-slate-500 font-medium">카드</th>
+                    <th className="text-left py-2 pr-2 text-slate-500 font-medium">가맹점</th>
+                    <th className="text-right py-2 text-slate-500 font-medium">금액</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {modalTransactions.map((tx) => (
+                    <tr key={tx.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                      <td className="py-2 pr-2 text-slate-600 whitespace-nowrap">{tx.date}</td>
+                      <td className="py-2 pr-2 text-slate-400 text-xs whitespace-nowrap">{tx.cardCompany}</td>
+                      <td className="py-2 pr-2 text-slate-800 truncate max-w-[200px]">{tx.merchant}</td>
+                      <td className="py-2 text-right font-medium text-slate-900 whitespace-nowrap">
+                        {Math.abs(tx.amount).toLocaleString()}원
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-6 py-3 border-t border-slate-200 bg-slate-50 rounded-b-lg">
+              <span className="text-sm text-slate-500">합계 {modalTransactions.length}건</span>
+              <span className="text-sm font-bold text-slate-900">
+                {modalTransactions.reduce((s, t) => s + Math.abs(t.amount), 0).toLocaleString()}원
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

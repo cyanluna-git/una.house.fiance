@@ -5,7 +5,7 @@ import type { Plugin, ViteDevServer } from "vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// 프로젝트 로컬 DB: {project_root}/.claude/kanban.db
+// Project-local DB: {project_root}/.claude/kanban.db
 const DB_PATH =
   process.env.KANBAN_DB ||
   path.resolve(__dirname, "..", "..", ".claude", "kanban.db");
@@ -20,14 +20,37 @@ function getDb(): Database.Database {
       project TEXT NOT NULL,
       title TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'todo',
-      priority TEXT NOT NULL DEFAULT '중간',
+      priority TEXT NOT NULL DEFAULT 'medium',
       description TEXT,
+      plan TEXT,
+      implementation_notes TEXT,
       tags TEXT,
+      review_comments TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       started_at TEXT,
+      reviewed_at TEXT,
       completed_at TEXT
     );
   `);
+
+  // Migrate existing DB: add new columns if missing
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN review_comments TEXT`);
+  } catch { /* column already exists */ }
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN reviewed_at TEXT`);
+  } catch { /* column already exists */ }
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN plan TEXT`);
+  } catch { /* column already exists */ }
+  try {
+    db.exec(`ALTER TABLE tasks ADD COLUMN implementation_notes TEXT`);
+  } catch { /* column already exists */ }
+
+  // Migrate Korean priority values to English
+  db.exec(`UPDATE tasks SET priority = 'high' WHERE priority = '높음'`);
+  db.exec(`UPDATE tasks SET priority = 'medium' WHERE priority = '중간'`);
+  db.exec(`UPDATE tasks SET priority = 'low' WHERE priority = '낮음'`);
 
   return db;
 }
@@ -39,15 +62,20 @@ interface Task {
   status: string;
   priority: string;
   description: string | null;
+  plan: string | null;
+  implementation_notes: string | null;
   tags: string | null;
+  review_comments: string | null;
   created_at: string;
   started_at: string | null;
+  reviewed_at: string | null;
   completed_at: string | null;
 }
 
 interface Board {
   todo: Task[];
   inprogress: Task[];
+  review: Task[];
   done: Task[];
   projects: string[];
 }
@@ -99,6 +127,7 @@ export function kanbanApiPlugin(): Plugin {
             const board: Board = {
               todo: tasks.filter((t) => t.status === "todo"),
               inprogress: tasks.filter((t) => t.status === "inprogress"),
+              review: tasks.filter((t) => t.status === "review"),
               done: tasks.filter((t) => t.status === "done"),
               projects,
             };
@@ -148,11 +177,14 @@ export function kanbanApiPlugin(): Plugin {
               values.push(body.status);
               if (body.status === "inprogress") {
                 sets.push("started_at = datetime('now')");
+              } else if (body.status === "review") {
+                sets.push("reviewed_at = NULL");
               } else if (body.status === "done") {
                 sets.push("completed_at = datetime('now')");
               } else if (body.status === "todo") {
                 sets.push("started_at = NULL");
                 sets.push("completed_at = NULL");
+                sets.push("reviewed_at = NULL");
               }
             }
             if (body.title !== undefined) {
@@ -167,6 +199,14 @@ export function kanbanApiPlugin(): Plugin {
               sets.push("description = ?");
               values.push(body.description);
             }
+            if (body.plan !== undefined) {
+              sets.push("plan = ?");
+              values.push(body.plan);
+            }
+            if (body.implementation_notes !== undefined) {
+              sets.push("implementation_notes = ?");
+              values.push(body.implementation_notes);
+            }
             if (body.tags !== undefined) {
               sets.push("tags = ?");
               values.push(
@@ -174,6 +214,18 @@ export function kanbanApiPlugin(): Plugin {
                   ? body.tags
                   : JSON.stringify(body.tags)
               );
+            }
+            if (body.review_comments !== undefined) {
+              sets.push("review_comments = ?");
+              values.push(
+                typeof body.review_comments === "string"
+                  ? body.review_comments
+                  : JSON.stringify(body.review_comments)
+              );
+            }
+            if (body.reviewed_at !== undefined) {
+              sets.push("reviewed_at = ?");
+              values.push(body.reviewed_at);
             }
 
             if (sets.length > 0) {
@@ -185,6 +237,99 @@ export function kanbanApiPlugin(): Plugin {
 
             res.setHeader("Content-Type", "application/json");
             res.end(JSON.stringify({ success: true }));
+          } finally {
+            db.close();
+          }
+          return;
+        }
+
+        // POST /api/task  (create new task)
+        if (req.url === "/api/task" && req.method === "POST") {
+          const body = await parseBody(req);
+          const db = getDb();
+          try {
+            const project =
+              body.project ||
+              path.basename(path.resolve(__dirname, "..", ".."));
+            const title = body.title || "Untitled";
+            const priority = body.priority || "medium";
+            const description = body.description || null;
+            const tags =
+              body.tags !== undefined
+                ? typeof body.tags === "string"
+                  ? body.tags
+                  : JSON.stringify(body.tags)
+                : null;
+
+            const result = db
+              .prepare(
+                `INSERT INTO tasks (project, title, priority, description, tags)
+                 VALUES (?, ?, ?, ?, ?)`
+              )
+              .run(project, title, priority, description, tags);
+
+            res.setHeader("Content-Type", "application/json");
+            res.end(
+              JSON.stringify({ success: true, id: result.lastInsertRowid })
+            );
+          } finally {
+            db.close();
+          }
+          return;
+        }
+
+        // POST /api/task/:id/review  (append a review comment & auto-transition)
+        if (
+          req.url?.match(/^\/api\/task\/\d+\/review$/) &&
+          req.method === "POST"
+        ) {
+          const id = req.url.split("/")[3];
+          const body = await parseBody(req);
+          const db = getDb();
+          try {
+            const task = db
+              .prepare("SELECT review_comments FROM tasks WHERE id = ?")
+              .get(id) as { review_comments: string | null } | undefined;
+
+            if (!task) {
+              res.statusCode = 404;
+              res.end(JSON.stringify({ error: "Not found" }));
+              return;
+            }
+
+            const comments = task.review_comments
+              ? JSON.parse(task.review_comments)
+              : [];
+            const newComment = {
+              reviewer: body.reviewer || "claude-review-agent",
+              status: body.status, // "approved" | "changes_requested"
+              comment: body.comment,
+              timestamp: new Date().toISOString(),
+            };
+            comments.push(newComment);
+
+            const newStatus =
+              body.status === "approved" ? "done" : "inprogress";
+            const sets = [
+              "review_comments = ?",
+              "reviewed_at = datetime('now')",
+              "status = ?",
+            ];
+            const vals: any[] = [JSON.stringify(comments), newStatus];
+
+            if (newStatus === "done") {
+              sets.push("completed_at = datetime('now')");
+            }
+
+            vals.push(id);
+            db.prepare(
+              `UPDATE tasks SET ${sets.join(", ")} WHERE id = ?`
+            ).run(...vals);
+
+            res.setHeader("Content-Type", "application/json");
+            res.end(
+              JSON.stringify({ success: true, newStatus, comment: newComment })
+            );
           } finally {
             db.close();
           }
