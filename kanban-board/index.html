@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kanban Board</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-left">
+        <h1>Kanban Board</h1>
+        <div id="project-filter"></div>
+      </div>
+      <div class="header-meta">
+        <span id="count-summary"></span>
+        <button id="refresh-btn" title="새로고침">&#x21bb;</button>
+      </div>
+    </header>
+    <main id="board"></main>
+    <!-- Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div class="modal">
+        <button class="modal-close" id="modal-close">&times;</button>
+        <div id="modal-content"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

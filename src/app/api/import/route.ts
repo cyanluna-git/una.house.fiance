@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
         categoryL1: cat.categoryL1,
         categoryL2: cat.categoryL2,
         categoryL3: cat.categoryL3,
+        necessity: cat.necessity,
         sourceFile: file.name,
         sourceType: "card" as const,
         isManual: false,

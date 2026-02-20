@@ -17,10 +17,14 @@ export const transactions = sqliteTable("transactions", {
   categoryL1: text("category_l1").default("기타"),
   categoryL2: text("category_l2").default("미분류"),
   categoryL3: text("category_l3").default(""),
+  necessity: text("necessity").default("unset"), // essential | discretionary | waste | unset
+  familyMemberId: integer("family_member_id"),
+  tripId: integer("trip_id"),
   note: text("note"),
   sourceFile: text("source_file"),
   sourceType: text("source_type").default("card"),
   isManual: integer("is_manual", { mode: "boolean" }).default(false),
+  isCompanyExpense: integer("is_company_expense", { mode: "boolean" }).default(false),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
@@ -78,6 +82,53 @@ export const loans = sqliteTable("loans", {
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
+export const familyMembers = sqliteTable("family_members", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  relation: text("relation").notNull(), // 본인, 배우자, 자녀1, 자녀2, ...
+  birthYear: integer("birth_year"),
+  note: text("note"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const trips = sqliteTable("trips", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(), // e.g. "2025 제주 가족여행"
+  destination: text("destination"),
+  startDate: text("start_date"),
+  endDate: text("end_date"),
+  budget: integer("budget"),
+  note: text("note"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const transactionSplits = sqliteTable("transaction_splits", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  transactionId: integer("transaction_id").notNull(),
+  categoryL1: text("category_l1").notNull(),
+  categoryL2: text("category_l2").default(""),
+  categoryL3: text("category_l3").default(""),
+  amount: integer("amount").notNull(),
+  necessity: text("necessity").default("unset"),
+  note: text("note"),
+});
+
+export const fixedExpenses = sqliteTable("fixed_expenses", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(), // 항목명 (양가적금, 아이용돈, 월회비 등)
+  category: text("category").notNull(), // 적금, 용돈, 회비, 보험, 공과금, 기부, 기타
+  amount: integer("amount").notNull(), // 월 금액
+  paymentDay: integer("payment_day"), // 이체일 (1~31)
+  paymentMethod: text("payment_method"), // 자동이체, 계좌이체, 카드 등
+  recipient: text("recipient"), // 수취처/계좌
+  familyMemberId: integer("family_member_id"), // 귀속 구성원
+  startDate: text("start_date").notNull(), // 시작일 YYYY-MM-DD
+  endDate: text("end_date"), // 종료일 (null이면 진행중)
+  isActive: integer("is_active", { mode: "boolean" }).default(true),
+  note: text("note"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type CategoryRule = typeof categoryRules.$inferSelect;
@@ -86,3 +137,11 @@ export type SalaryStatement = typeof salaryStatements.$inferSelect;
 export type SalaryItem = typeof salaryItems.$inferSelect;
 export type Loan = typeof loans.$inferSelect;
 export type NewLoan = typeof loans.$inferInsert;
+export type FamilyMember = typeof familyMembers.$inferSelect;
+export type NewFamilyMember = typeof familyMembers.$inferInsert;
+export type Trip = typeof trips.$inferSelect;
+export type NewTrip = typeof trips.$inferInsert;
+export type TransactionSplit = typeof transactionSplits.$inferSelect;
+export type NewTransactionSplit = typeof transactionSplits.$inferInsert;
+export type FixedExpense = typeof fixedExpenses.$inferSelect;
+export type NewFixedExpense = typeof fixedExpenses.$inferInsert;

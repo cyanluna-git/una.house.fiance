@@ -31,8 +31,16 @@ const MENU: MenuSection[] = [
     title: "재무",
     items: [
       { label: "수입", href: "/income", icon: "💰" },
+      { label: "고정지출", href: "/fixed-expenses", icon: "🔄" },
       { label: "자산", href: "/assets", icon: "🏦" },
       { label: "대출", href: "/loans", icon: "📋" },
+    ],
+  },
+  {
+    title: "생활",
+    items: [
+      { label: "여행", href: "/trips", icon: "✈️" },
+      { label: "가족 구성원", href: "/family", icon: "👨‍👩‍👧‍👦" },
     ],
   },
   {
@@ -40,6 +48,7 @@ const MENU: MenuSection[] = [
     items: [
       { label: "임포트", href: "/import", icon: "📁" },
       { label: "수동 입력", href: "/manual", icon: "✏️" },
+      { label: "카테고리 규칙", href: "/category-rules", icon: "🏷️" },
     ],
   },
 ];

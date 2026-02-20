@@ -12,8 +12,30 @@ interface Transaction {
   categoryL1: string;
   categoryL2: string;
   categoryL3: string;
+  necessity: string | null;
+  familyMemberId: number | null;
+  tripId: number | null;
+  isCompanyExpense: boolean;
   note: string | null;
 }
+
+interface FamilyMember {
+  id: number;
+  name: string;
+  relation: string;
+}
+
+interface Trip {
+  id: number;
+  name: string;
+}
+
+const NECESSITY_LABELS: Record<string, { label: string; color: string }> = {
+  essential: { label: "필수", color: "bg-emerald-100 text-emerald-700" },
+  discretionary: { label: "재량", color: "bg-amber-100 text-amber-700" },
+  waste: { label: "과소비", color: "bg-red-100 text-red-700" },
+  unset: { label: "", color: "" },
+};
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -29,6 +51,8 @@ export default function TransactionsPage() {
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Transaction>>({});
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [tripList, setTripList] = useState<Trip[]>([]);
 
   const limit = 50;
 
@@ -60,12 +84,21 @@ export default function TransactionsPage() {
     fetchTransactions();
   }, [fetchTransactions]);
 
+  useEffect(() => {
+    fetch("/api/family").then((r) => r.json()).then((d) => setFamilyMembers(d.data || []));
+    fetch("/api/trips").then((r) => r.json()).then((d) => setTripList(d.data || []));
+  }, []);
+
   const handleEdit = (transaction: Transaction) => {
     setEditingId(transaction.id);
     setEditData({
       categoryL1: transaction.categoryL1,
       categoryL2: transaction.categoryL2,
       categoryL3: transaction.categoryL3,
+      necessity: transaction.necessity,
+      familyMemberId: transaction.familyMemberId,
+      tripId: transaction.tripId,
+      isCompanyExpense: transaction.isCompanyExpense,
       note: transaction.note,
       merchant: transaction.merchant,
     });
@@ -82,6 +115,10 @@ export default function TransactionsPage() {
           categoryL1: editData.categoryL1,
           categoryL2: editData.categoryL2,
           categoryL3: editData.categoryL3,
+          necessity: editData.necessity,
+          familyMemberId: editData.familyMemberId,
+          tripId: editData.tripId,
+          isCompanyExpense: editData.isCompanyExpense,
           note: editData.note,
           merchant: editData.merchant,
         }),
@@ -226,6 +263,7 @@ export default function TransactionsPage() {
                       <th className="px-4 py-3 text-left font-semibold">가맹점</th>
                       <th className="px-4 py-3 text-right font-semibold">금액</th>
                       <th className="px-4 py-3 text-left font-semibold">카테고리</th>
+                      <th className="px-4 py-3 text-center font-semibold">분류</th>
                       <th className="px-4 py-3 text-center font-semibold">작업</th>
                     </tr>
                   </thead>
@@ -339,6 +377,92 @@ export default function TransactionsPage() {
                               {tx.categoryL2 && (
                                 <span className="inline-block px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs">
                                   {tx.categoryL2}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        {/* Necessity + Family + Trip */}
+                        <td className="px-4 py-3 text-center">
+                          {editingId === tx.id ? (
+                            <div className="flex flex-col gap-1">
+                              <select
+                                value={editData.necessity || "unset"}
+                                onChange={(e) =>
+                                  setEditData({ ...editData, necessity: e.target.value })
+                                }
+                                className="px-2 py-1 border border-slate-300 rounded text-xs"
+                              >
+                                <option value="unset">-</option>
+                                <option value="essential">필수</option>
+                                <option value="discretionary">재량</option>
+                                <option value="waste">과소비</option>
+                              </select>
+                              {familyMembers.length > 0 && (
+                                <select
+                                  value={editData.familyMemberId || ""}
+                                  onChange={(e) =>
+                                    setEditData({
+                                      ...editData,
+                                      familyMemberId: e.target.value ? Number(e.target.value) : null,
+                                    })
+                                  }
+                                  className="px-2 py-1 border border-slate-300 rounded text-xs"
+                                >
+                                  <option value="">구성원</option>
+                                  {familyMembers.map((m) => (
+                                    <option key={m.id} value={m.id}>
+                                      {m.name} ({m.relation})
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                              {tripList.length > 0 && (
+                                <select
+                                  value={editData.tripId || ""}
+                                  onChange={(e) =>
+                                    setEditData({
+                                      ...editData,
+                                      tripId: e.target.value ? Number(e.target.value) : null,
+                                    })
+                                  }
+                                  className="px-2 py-1 border border-slate-300 rounded text-xs"
+                                >
+                                  <option value="">여행</option>
+                                  {tripList.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                      {t.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                              <label className="flex items-center gap-1 text-xs text-slate-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={!!editData.isCompanyExpense}
+                                  onChange={(e) =>
+                                    setEditData({
+                                      ...editData,
+                                      isCompanyExpense: e.target.checked,
+                                    })
+                                  }
+                                  className="rounded border-slate-300"
+                                />
+                                회사경비
+                              </label>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-0.5">
+                              {tx.necessity && tx.necessity !== "unset" && NECESSITY_LABELS[tx.necessity] && (
+                                <span
+                                  className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${NECESSITY_LABELS[tx.necessity].color}`}
+                                >
+                                  {NECESSITY_LABELS[tx.necessity].label}
+                                </span>
+                              )}
+                              {tx.isCompanyExpense && (
+                                <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-violet-100 text-violet-700">
+                                  경비
                                 </span>
                               )}
                             </div>

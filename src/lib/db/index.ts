@@ -82,7 +82,66 @@ sqlite.exec(`
     category_l3 TEXT NOT NULL DEFAULT '',
     priority INTEGER DEFAULT 0
   );
+  CREATE TABLE IF NOT EXISTS family_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    relation TEXT NOT NULL,
+    birth_year INTEGER,
+    note TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS trips (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    destination TEXT,
+    start_date TEXT,
+    end_date TEXT,
+    budget INTEGER,
+    note TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS transaction_splits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    transaction_id INTEGER NOT NULL,
+    category_l1 TEXT NOT NULL,
+    category_l2 TEXT DEFAULT '',
+    category_l3 TEXT DEFAULT '',
+    amount INTEGER NOT NULL,
+    necessity TEXT DEFAULT 'unset',
+    note TEXT
+  );
+  CREATE TABLE IF NOT EXISTS fixed_expenses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    payment_day INTEGER,
+    payment_method TEXT,
+    recipient TEXT,
+    family_member_id INTEGER,
+    start_date TEXT NOT NULL,
+    end_date TEXT,
+    is_active INTEGER DEFAULT 1,
+    note TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
+
+// Migration: add necessity, family_member_id, trip_id to transactions
+// Each ALTER is wrapped individually to handle cases where column already exists
+const newColumns = [
+  { name: "necessity", sql: `ALTER TABLE transactions ADD COLUMN necessity TEXT DEFAULT 'unset'` },
+  { name: "family_member_id", sql: `ALTER TABLE transactions ADD COLUMN family_member_id INTEGER` },
+  { name: "trip_id", sql: `ALTER TABLE transactions ADD COLUMN trip_id INTEGER` },
+  { name: "is_company_expense", sql: `ALTER TABLE transactions ADD COLUMN is_company_expense INTEGER DEFAULT 0` },
+];
+for (const col of newColumns) {
+  try {
+    sqlite.exec(col.sql);
+  } catch {
+    // Column already exists - ignore
+  }
+}
 
 // Migration: if old 'category' column exists, migrate to 3-level
 try {
@@ -120,6 +179,22 @@ try {
   }
 } catch (migrationError) {
   console.error("Migration check failed:", migrationError);
+}
+
+// Auto-seed category_rules if empty
+const ruleCount = sqlite.prepare("SELECT COUNT(*) as cnt FROM category_rules").get() as { cnt: number };
+if (ruleCount.cnt === 0) {
+  const { initialCategoryRules } = require("./seed-rules");
+  const insertRule = sqlite.prepare(
+    "INSERT INTO category_rules (keyword, category_l1, category_l2, category_l3, priority) VALUES (?, ?, ?, ?, ?)"
+  );
+  const seedMany = sqlite.transaction((rules: any[]) => {
+    for (const r of rules) {
+      insertRule.run(r.keyword, r.categoryL1, r.categoryL2 || "", r.categoryL3 || "", r.priority || 0);
+    }
+  });
+  seedMany(initialCategoryRules);
+  console.log(`Seeded ${initialCategoryRules.length} category rules`);
 }
 
 export const db = drizzle(sqlite, { schema });

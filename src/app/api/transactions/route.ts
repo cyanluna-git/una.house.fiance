@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     const cat = categoryL1
-      ? { categoryL1, categoryL2: categoryL2 || "", categoryL3: categoryL3 || "" }
+      ? { categoryL1, categoryL2: categoryL2 || "", categoryL3: categoryL3 || "", necessity: body.necessity || "unset" }
       : categorizeMerchant(merchant);
 
     const result = db
@@ -88,6 +88,9 @@ export async function POST(request: NextRequest) {
         categoryL1: cat.categoryL1,
         categoryL2: cat.categoryL2,
         categoryL3: cat.categoryL3,
+        necessity: cat.necessity,
+        familyMemberId: body.familyMemberId || null,
+        tripId: body.tripId || null,
         note,
         sourceType,
         isManual: true,
