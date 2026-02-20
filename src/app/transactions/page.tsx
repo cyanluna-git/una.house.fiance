@@ -7,6 +7,8 @@ interface Transaction {
   id: number;
   date: string;
   cardCompany: string;
+  cardName: string | null;
+  cardId: number | null;
   merchant: string;
   amount: number;
   categoryL1: string;
@@ -17,6 +19,13 @@ interface Transaction {
   tripId: number | null;
   isCompanyExpense: boolean;
   note: string | null;
+}
+
+interface CardInfo {
+  id: number;
+  cardCompany: string;
+  cardName: string;
+  isActive: boolean;
 }
 
 interface FamilyMember {
@@ -51,6 +60,7 @@ export default function TransactionsPage() {
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Transaction>>({});
+  const [cardList, setCardList] = useState<CardInfo[]>([]);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [tripList, setTripList] = useState<Trip[]>([]);
 
@@ -66,7 +76,7 @@ export default function TransactionsPage() {
         ...(filters.to && { to: filters.to }),
         ...(filters.categoryL1 && { categoryL1: filters.categoryL1 }),
         ...(filters.categoryL2 && { categoryL2: filters.categoryL2 }),
-        ...(filters.card && { card: filters.card }),
+        ...(filters.card && { cardId: filters.card }),
       });
 
       const response = await fetch(`/api/transactions?${params}`);
@@ -85,6 +95,7 @@ export default function TransactionsPage() {
   }, [fetchTransactions]);
 
   useEffect(() => {
+    fetch("/api/cards").then((r) => r.json()).then((d) => setCardList(d.data || []));
     fetch("/api/family").then((r) => r.json()).then((d) => setFamilyMembers(d.data || []));
     fetch("/api/trips").then((r) => r.json()).then((d) => setTripList(d.data || []));
   }, []);
@@ -150,9 +161,14 @@ export default function TransactionsPage() {
   };
 
   const totalPages = Math.ceil(total / limit);
-  const cardCompanies = Array.from(
-    new Set(transactions.map((t) => t.cardCompany))
-  );
+
+  function getCardDisplayName(tx: Transaction) {
+    if (tx.cardId) {
+      const card = cardList.find((c) => c.id === tx.cardId);
+      if (card) return { company: card.cardCompany, name: card.cardName };
+    }
+    return { company: tx.cardCompany, name: tx.cardName || tx.cardCompany };
+  }
 
   return (
     <div className="p-6">
@@ -228,7 +244,7 @@ export default function TransactionsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                카드사
+                카드
               </label>
               <select
                 value={filters.card}
@@ -236,9 +252,9 @@ export default function TransactionsPage() {
                 className="w-full px-3 py-2 border border-slate-300 rounded"
               >
                 <option value="">모두</option>
-                {cardCompanies.map((card) => (
-                  <option key={card} value={card}>
-                    {card}
+                {cardList.map((card) => (
+                  <option key={card.id} value={card.id}>
+                    {card.cardCompany} · {card.cardName}
                   </option>
                 ))}
               </select>
@@ -259,7 +275,7 @@ export default function TransactionsPage() {
                   <thead className="bg-slate-100 border-b">
                     <tr>
                       <th className="px-4 py-3 text-left font-semibold">날짜</th>
-                      <th className="px-4 py-3 text-left font-semibold">카드사</th>
+                      <th className="px-4 py-3 text-left font-semibold">카드</th>
                       <th className="px-4 py-3 text-left font-semibold">가맹점</th>
                       <th className="px-4 py-3 text-right font-semibold">금액</th>
                       <th className="px-4 py-3 text-left font-semibold">카테고리</th>
@@ -274,8 +290,9 @@ export default function TransactionsPage() {
                         className="border-b hover:bg-slate-50 transition"
                       >
                         <td className="px-4 py-3">{tx.date}</td>
-                        <td className="px-4 py-3 text-sm text-slate-600">
-                          {tx.cardCompany}
+                        <td className="px-4 py-3 text-sm">
+                          <div className="text-slate-800 font-medium">{getCardDisplayName(tx).name}</div>
+                          <div className="text-xs text-slate-400">{getCardDisplayName(tx).company}</div>
                         </td>
                         <td className="px-4 py-3">
                           {editingId === tx.id ? (

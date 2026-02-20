@@ -25,6 +25,7 @@ export const transactions = sqliteTable("transactions", {
   sourceType: text("source_type").default("card"),
   isManual: integer("is_manual", { mode: "boolean" }).default(false),
   isCompanyExpense: integer("is_company_expense", { mode: "boolean" }).default(false),
+  cardId: integer("card_id"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
@@ -145,3 +146,24 @@ export type TransactionSplit = typeof transactionSplits.$inferSelect;
 export type NewTransactionSplit = typeof transactionSplits.$inferInsert;
 export type FixedExpense = typeof fixedExpenses.$inferSelect;
 export type NewFixedExpense = typeof fixedExpenses.$inferInsert;
+
+export const cards = sqliteTable("cards", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  cardCompany: text("card_company").notNull(),
+  cardName: text("card_name").notNull(),
+  cardNumber: text("card_number"),
+  cardType: text("card_type").default("신용"),
+  isActive: integer("is_active", { mode: "boolean" }).default(true),
+  annualFee: integer("annual_fee").default(0),
+  issueDate: text("issue_date"),
+  expiryDate: text("expiry_date"),
+  monthlyTarget: integer("monthly_target"),
+  monthlyDiscountLimit: integer("monthly_discount_limit"),
+  mainBenefits: text("main_benefits"),
+  familyMemberId: integer("family_member_id"),
+  note: text("note"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export type Card = typeof cards.$inferSelect;
+export type NewCard = typeof cards.$inferInsert;

@@ -24,6 +24,7 @@ const MENU: MenuSection[] = [
     title: "소비",
     items: [
       { label: "거래 내역", href: "/transactions", icon: "💳" },
+      { label: "카드 관리", href: "/cards", icon: "🏧" },
       { label: "카테고리 분석", href: "/analytics", icon: "📈" },
     ],
   },

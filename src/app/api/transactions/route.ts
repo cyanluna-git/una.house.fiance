@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const categoryL1 = searchParams.get("categoryL1");
     const categoryL2 = searchParams.get("categoryL2");
     const cardCompany = searchParams.get("card");
+    const cardId = searchParams.get("cardId");
 
     const offset = (page - 1) * limit;
 
@@ -23,7 +24,8 @@ export async function GET(request: NextRequest) {
     if (to) conditions.push(lte(transactions.date, to));
     if (categoryL1) conditions.push(eq(transactions.categoryL1, categoryL1));
     if (categoryL2) conditions.push(eq(transactions.categoryL2, categoryL2));
-    if (cardCompany) conditions.push(eq(transactions.cardCompany, cardCompany));
+    if (cardId) conditions.push(eq(transactions.cardId, Number(cardId)));
+    else if (cardCompany) conditions.push(eq(transactions.cardCompany, cardCompany));
 
     let query = db.select().from(transactions);
     if (conditions.length > 0) {

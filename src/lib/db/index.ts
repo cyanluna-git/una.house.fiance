@@ -110,6 +110,23 @@ sqlite.exec(`
     necessity TEXT DEFAULT 'unset',
     note TEXT
   );
+  CREATE TABLE IF NOT EXISTS cards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    card_company TEXT NOT NULL,
+    card_name TEXT NOT NULL,
+    card_number TEXT,
+    card_type TEXT DEFAULT '신용',
+    is_active INTEGER DEFAULT 1,
+    annual_fee INTEGER DEFAULT 0,
+    issue_date TEXT,
+    expiry_date TEXT,
+    monthly_target INTEGER,
+    monthly_discount_limit INTEGER,
+    main_benefits TEXT,
+    family_member_id INTEGER,
+    note TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
   CREATE TABLE IF NOT EXISTS fixed_expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -134,6 +151,7 @@ const newColumns = [
   { name: "family_member_id", sql: `ALTER TABLE transactions ADD COLUMN family_member_id INTEGER` },
   { name: "trip_id", sql: `ALTER TABLE transactions ADD COLUMN trip_id INTEGER` },
   { name: "is_company_expense", sql: `ALTER TABLE transactions ADD COLUMN is_company_expense INTEGER DEFAULT 0` },
+  { name: "card_id", sql: `ALTER TABLE transactions ADD COLUMN card_id INTEGER` },
 ];
 for (const col of newColumns) {
   try {
