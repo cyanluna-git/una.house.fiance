@@ -6,14 +6,16 @@ import { parseLotteCard } from "./lotte";
 import { parseShinhanCard } from "./shinhan";
 import { parseHanaCard } from "./hana";
 import { parseWooriCard } from "./woori";
+import { parseChakCard } from "./chak";
 
-export type CardCompany = "국민카드" | "농협카드" | "현대카드" | "롯데카드" | "신한카드" | "하나카드" | "우리카드";
+export type CardCompany = "국민카드" | "농협카드" | "현대카드" | "롯데카드" | "신한카드" | "하나카드" | "우리카드" | "지역화폐";
 
 export function detectCardCompany(fileName: string): CardCompany {
   // macOS uses NFD (decomposed) Unicode for Korean filenames
   // Source code literals are NFC (composed) - normalize to match
   const lower = fileName.normalize("NFC").toLowerCase();
 
+  if (lower.includes("chak") || lower.includes("착")) return "지역화폐";
   if (lower.includes("국민")) return "국민카드";
   if (lower.includes("농협")) return "농협카드";
   if (lower.includes("현대")) return "현대카드";
@@ -25,11 +27,13 @@ export function detectCardCompany(fileName: string): CardCompany {
   throw new Error(`카드사를 인식할 수 없음: ${fileName}`);
 }
 
-export function parseFile(buffer: Buffer, fileName: string): ParsedTransaction[] {
+export async function parseFile(buffer: Buffer, fileName: string, password?: string): Promise<ParsedTransaction[]> {
   const cardCompany = detectCardCompany(fileName);
 
   try {
     switch (cardCompany) {
+      case "지역화폐":
+        return await parseChakCard(buffer, password);
       case "국민카드":
         return parseKookminCard(buffer);
       case "농협카드":

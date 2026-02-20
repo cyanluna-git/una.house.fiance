@@ -28,10 +28,10 @@ interface FamilyMember {
 
 const CARD_COMPANIES = [
   "국민카드", "현대카드", "신한카드", "롯데카드",
-  "농협카드", "하나카드", "우리카드", "기타",
+  "농협카드", "하나카드", "우리카드", "지역화폐", "기타",
 ];
 
-const CARD_TYPES = ["신용", "체크"];
+const CARD_TYPES = ["신용", "체크", "선불"];
 
 const companyBadge = (company: string) => {
   const colors: Record<string, string> = {
@@ -42,6 +42,7 @@ const companyBadge = (company: string) => {
     농협카드: "bg-green-100 text-green-700",
     하나카드: "bg-teal-100 text-teal-700",
     우리카드: "bg-indigo-100 text-indigo-700",
+    지역화폐: "bg-orange-100 text-orange-700",
   };
   return colors[company] || "bg-gray-100 text-gray-700";
 };

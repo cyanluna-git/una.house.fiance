@@ -23,7 +23,7 @@ async function bulkImport() {
 
     try {
       const buffer = fs.readFileSync(filePath);
-      const parsedTransactions = parseFile(buffer, fileName);
+      const parsedTransactions = await parseFile(buffer, fileName);
 
       if (parsedTransactions.length === 0) {
         console.log(`⏭️  ${fileName}: 거래 내역 없음`);

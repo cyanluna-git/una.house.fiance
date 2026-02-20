@@ -7,6 +7,7 @@ export default function ImportPage() {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [password, setPassword] = useState("");
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -42,6 +43,9 @@ export default function ImportPage() {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      if (password) {
+        formData.append("password", password);
+      }
 
       const response = await fetch("/api/import", {
         method: "POST",
@@ -67,7 +71,21 @@ export default function ImportPage() {
   return (
     <div className="p-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-slate-900 mb-8">카드 명세서 임포트</h1>
+        <h1 className="text-3xl font-bold text-slate-900 mb-8">명세서 임포트</h1>
+
+        {/* Password field for encrypted files */}
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            파일 비밀번호 (암호화된 파일인 경우)
+          </label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="비밀번호가 없으면 비워두세요"
+            className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+          />
+        </div>
 
         {/* Dropzone */}
         <div
@@ -153,7 +171,13 @@ export default function ImportPage() {
             <li className="flex items-center">
               <span className="mr-2">✓</span> 우리카드
             </li>
+            <li className="flex items-center">
+              <span className="mr-2">✓</span> 지역화폐 (착 Chak)
+            </li>
           </ul>
+          <p className="text-sm text-slate-500 mt-4">
+            지역화폐(착) 파일은 암호화되어 있으므로 위 비밀번호 필드에 입력 후 업로드하세요.
+          </p>
         </div>
       </div>
     </div>
