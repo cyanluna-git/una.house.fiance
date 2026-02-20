@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(python3:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git -C /Users/cyanluna-pro16/dev/unahouse.finance add package.json pnpm-lock.yaml scripts/bulk-import.ts src/app/api/import/route.ts \"src/app/api/transactions/[id]/route.ts\" src/app/api/transactions/route.ts src/app/import/page.tsx src/app/layout.tsx src/app/manual/page.tsx src/app/page.tsx src/app/transactions/page.tsx src/lib/categorizer.ts src/lib/db/index.ts src/lib/db/schema.ts src/lib/db/seed-rules.ts src/lib/categories.ts src/components/Sidebar.tsx src/app/analytics/page.tsx src/app/assets/page.tsx src/app/income/page.tsx src/app/loans/page.tsx workthrough/2026-02-19_01_00_category-sidebar-dashboard.md)",
+      "Bash(git -C:*)"
     ]
   }
 }

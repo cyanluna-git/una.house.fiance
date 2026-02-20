@@ -32,6 +32,48 @@ sqlite.exec(`
     is_manual INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
   );
+  CREATE TABLE IF NOT EXISTS salary_statements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pay_date TEXT NOT NULL,
+    employee_name TEXT,
+    employee_id TEXT,
+    position TEXT,
+    department TEXT,
+    company_name TEXT,
+    gross_pay INTEGER NOT NULL,
+    total_deductions INTEGER NOT NULL,
+    net_pay INTEGER NOT NULL,
+    source_file TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS salary_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    statement_id INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    amount INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS loans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    loan_type TEXT NOT NULL,
+    loan_name TEXT NOT NULL,
+    purpose TEXT,
+    lender TEXT NOT NULL,
+    repay_institution TEXT,
+    original_amount INTEGER NOT NULL,
+    outstanding_amount INTEGER NOT NULL,
+    interest_rate REAL NOT NULL,
+    rate_type TEXT NOT NULL,
+    variable_period_months INTEGER,
+    variable_next_rate REAL,
+    repay_method TEXT,
+    monthly_payment INTEGER,
+    payment_day INTEGER,
+    start_date TEXT,
+    end_date TEXT,
+    note TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
   CREATE TABLE IF NOT EXISTS category_rules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     keyword TEXT NOT NULL,

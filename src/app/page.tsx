@@ -18,6 +18,14 @@ interface Transaction {
 interface MonthlyItem { month: string; amount: number }
 interface CategoryItem { name: string; value: number }
 interface TrendItem { month: string; [category: string]: string | number }
+interface IncomeExpenseItem { month: string; income: number; expense: number }
+
+interface SalaryStatement {
+  pay_date: string;
+  gross_pay: number;
+  net_pay: number;
+  total_deductions: number;
+}
 
 const COLORS = [
   "#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6",
@@ -30,6 +38,8 @@ export default function Home() {
   const [categoryData, setCategoryData] = useState<CategoryItem[]>([]);
   const [trendData, setTrendData] = useState<TrendItem[]>([]);
   const [trendCategories, setTrendCategories] = useState<string[]>([]);
+  const [incomeExpenseData, setIncomeExpenseData] = useState<IncomeExpenseItem[]>([]);
+  const [totalIncome, setTotalIncome] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -93,6 +103,33 @@ export default function Home() {
 
         setTotalAmount(all.reduce((sum, t) => sum + Math.abs(t.amount), 0));
         setTotalCount(all.length);
+
+        // Fetch income data
+        const incomeRes = await fetch("/api/income");
+        const incomeResult = await incomeRes.json();
+        const salaries: SalaryStatement[] = incomeResult.data || [];
+
+        // Monthly income map
+        const incomeMap = new Map<string, number>();
+        let incomeTotal = 0;
+        for (const s of salaries) {
+          const monthKey = s.pay_date.substring(0, 7);
+          incomeMap.set(monthKey, (incomeMap.get(monthKey) || 0) + s.gross_pay);
+          incomeTotal += s.gross_pay;
+        }
+        setTotalIncome(incomeTotal);
+
+        // Merge income + expense by month
+        const allMonthKeys = new Set([...monthlyMap.keys(), ...incomeMap.keys()]);
+        const ieData = Array.from(allMonthKeys)
+          .sort()
+          .slice(-12)
+          .map((month) => ({
+            month,
+            income: incomeMap.get(month) || 0,
+            expense: monthlyMap.get(month) || 0,
+          }));
+        setIncomeExpenseData(ieData);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
@@ -123,24 +160,55 @@ export default function Home() {
         <p className="text-slate-600 mb-8">개인 재무 현황을 한눈에 파악하세요</p>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg shadow p-6 text-white">
+            <p className="text-sm opacity-80">총 수입</p>
+            <p className="text-3xl font-bold mt-1">{totalIncome.toLocaleString()}원</p>
+          </div>
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
-            <p className="text-sm opacity-80">총 지출액</p>
+            <p className="text-sm opacity-80">총 지출</p>
             <p className="text-3xl font-bold mt-1">{totalAmount.toLocaleString()}원</p>
           </div>
-          <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg shadow p-6 text-white">
-            <p className="text-sm opacity-80">총 거래 건수</p>
-            <p className="text-3xl font-bold mt-1">{totalCount.toLocaleString()}건</p>
-          </div>
-          <div className="bg-gradient-to-r from-violet-500 to-violet-600 rounded-lg shadow p-6 text-white">
-            <p className="text-sm opacity-80">월 평균 지출</p>
+          <div className={`bg-gradient-to-r rounded-lg shadow p-6 text-white ${totalIncome - totalAmount >= 0 ? "from-teal-500 to-teal-600" : "from-red-500 to-red-600"}`}>
+            <p className="text-sm opacity-80">수지 차액</p>
             <p className="text-3xl font-bold mt-1">
-              {monthlyData.length > 0
-                ? Math.round(totalAmount / monthlyData.length).toLocaleString()
-                : 0}원
+              {totalIncome - totalAmount >= 0 ? "+" : ""}{(totalIncome - totalAmount).toLocaleString()}원
             </p>
           </div>
+          <div className="bg-gradient-to-r from-violet-500 to-violet-600 rounded-lg shadow p-6 text-white">
+            <p className="text-sm opacity-80">거래 건수</p>
+            <p className="text-3xl font-bold mt-1">{totalCount.toLocaleString()}건</p>
+          </div>
         </div>
+
+        {/* Income vs Expense Chart */}
+        {incomeExpenseData.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">수입 vs 지출</h3>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={incomeExpenseData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(v) => v.substring(5)}
+                />
+                <YAxis tick={{ fontSize: 12 }} tickFormatter={formatAmount} />
+                <Tooltip
+                  formatter={(value, name) => [
+                    `${Number(value).toLocaleString()}원`,
+                    name === "income" ? "수입" : "지출",
+                  ]}
+                />
+                <Legend
+                  formatter={(value) => (value === "income" ? "수입" : "지출")}
+                />
+                <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
         {/* Charts Row 1: Bar + Pie */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
