@@ -127,6 +127,16 @@ sqlite.exec(`
     note TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
+  CREATE TABLE IF NOT EXISTS loan_repayments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    loan_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    principal_amount INTEGER NOT NULL,
+    interest_amount INTEGER NOT NULL,
+    memo TEXT,
+    linked_transaction_id INTEGER,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
   CREATE TABLE IF NOT EXISTS fixed_expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,

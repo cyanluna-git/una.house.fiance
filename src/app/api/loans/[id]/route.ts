@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { loans } from "@/lib/db/schema";
+import { loans, loanRepayments } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function PUT(
@@ -60,6 +60,7 @@ export async function DELETE(
       return NextResponse.json({ error: "대출을 찾을 수 없습니다" }, { status: 404 });
     }
 
+    db.delete(loanRepayments).where(eq(loanRepayments.loanId, loanId)).run();
     db.delete(loans).where(eq(loans.id, loanId)).run();
     return NextResponse.json({ success: true });
   } catch (error) {

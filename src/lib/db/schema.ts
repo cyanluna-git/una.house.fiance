@@ -147,6 +147,20 @@ export type NewTransactionSplit = typeof transactionSplits.$inferInsert;
 export type FixedExpense = typeof fixedExpenses.$inferSelect;
 export type NewFixedExpense = typeof fixedExpenses.$inferInsert;
 
+export const loanRepayments = sqliteTable("loan_repayments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  loanId: integer("loan_id").notNull(),
+  date: text("date").notNull(), // YYYY-MM-DD
+  principalAmount: integer("principal_amount").notNull(),
+  interestAmount: integer("interest_amount").notNull(),
+  memo: text("memo"),
+  linkedTransactionId: integer("linked_transaction_id"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export type LoanRepayment = typeof loanRepayments.$inferSelect;
+export type NewLoanRepayment = typeof loanRepayments.$inferInsert;
+
 export const cards = sqliteTable("cards", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   cardCompany: text("card_company").notNull(),
