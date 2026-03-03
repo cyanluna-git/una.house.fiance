@@ -118,7 +118,10 @@ export const fixedExpenses = sqliteTable("fixed_expenses", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(), // 항목명 (양가적금, 아이용돈, 월회비 등)
   category: text("category").notNull(), // 적금, 용돈, 회비, 보험, 공과금, 기부, 기타
-  amount: integer("amount").notNull(), // 월 금액
+  amount: integer("amount").notNull(), // 단위 금액
+  frequency: text("frequency").default("monthly"), // monthly | daily | weekly | biweekly | annual
+  weekdays: text("weekdays"), // JSON array of weekday numbers [0-6], for weekly/biweekly
+  annualDate: text("annual_date"), // "MM-DD" for annual frequency
   paymentDay: integer("payment_day"), // 이체일 (1~31)
   paymentMethod: text("payment_method"), // 자동이체, 계좌이체, 카드 등
   recipient: text("recipient"), // 수취처/계좌

@@ -24,12 +24,44 @@ export async function POST(request: Request) {
       );
     }
 
+    const frequency = body.frequency || "monthly";
+
+    // Validation: weekly/biweekly require non-empty weekdays
+    if (frequency === "weekly" || frequency === "biweekly") {
+      const weekdays = body.weekdays
+        ? (typeof body.weekdays === "string" ? JSON.parse(body.weekdays) : body.weekdays)
+        : [];
+      if (!Array.isArray(weekdays) || weekdays.length === 0) {
+        return NextResponse.json(
+          { error: "주간/격주 항목은 요일을 1개 이상 선택하세요" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validation: annual requires annualDate in MM-DD format
+    if (frequency === "annual") {
+      if (!body.annualDate || !/^\d{2}-\d{2}$/.test(body.annualDate)) {
+        return NextResponse.json(
+          { error: "연간 항목은 날짜(MM-DD)를 입력하세요" },
+          { status: 400 }
+        );
+      }
+    }
+
+    const weekdaysStr = body.weekdays
+      ? (typeof body.weekdays === "string" ? body.weekdays : JSON.stringify(body.weekdays))
+      : null;
+
     const result = db
       .insert(fixedExpenses)
       .values({
         name: body.name,
         category: body.category,
         amount: Number(body.amount),
+        frequency: frequency,
+        weekdays: weekdaysStr,
+        annualDate: body.annualDate || null,
         paymentDay: body.paymentDay ? Number(body.paymentDay) : null,
         paymentMethod: body.paymentMethod || null,
         recipient: body.recipient || null,

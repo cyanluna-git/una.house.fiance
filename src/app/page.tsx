@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useCallback, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { calcMonthlyAmount } from "@/lib/fixed-expense-calc";
 
 const DashboardCharts = dynamic(() => import("@/components/DashboardCharts"), {
   ssr: false,
@@ -44,6 +45,10 @@ interface SalaryStatement {
 interface FixedExpense {
   id: number;
   amount: number;
+  frequency: string | null;
+  weekdays: string | null;
+  annualDate: string | null;
+  startDate: string;
   isActive: boolean;
 }
 
@@ -148,10 +153,18 @@ export default function Home() {
       l2Map.set(cat2, { amount: ex.amount + abs, count: ex.count + 1 });
     }
 
-    // Fixed expenses
+    // Fixed expenses - use calcMonthlyAmount for frequency-aware calculation
+    const fixedCalcYear = selectedMonth === "all" ? new Date().getFullYear() : Number(selectedMonth.slice(0, 4));
+    const fixedCalcMonth = selectedMonth === "all" ? new Date().getMonth() + 1 : Number(selectedMonth.slice(5, 7));
     const fixedMonthly = fixedExpenses
       .filter(fe => fe.isActive)
-      .reduce((sum, fe) => sum + fe.amount, 0);
+      .reduce((sum, fe) => sum + calcMonthlyAmount({
+        amount: fe.amount,
+        frequency: fe.frequency,
+        weekdays: fe.weekdays,
+        annualDate: fe.annualDate,
+        startDate: fe.startDate,
+      }, fixedCalcYear, fixedCalcMonth), 0);
 
     // Income
     let incomeTotal = 0;

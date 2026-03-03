@@ -17,11 +17,45 @@ export async function PUT(
       return NextResponse.json({ error: "항목을 찾을 수 없습니다" }, { status: 404 });
     }
 
+    const frequency = body.frequency !== undefined ? body.frequency : existing.frequency;
+
+    // Validation: weekly/biweekly require non-empty weekdays
+    if (frequency === "weekly" || frequency === "biweekly") {
+      const weekdaysRaw = body.weekdays !== undefined ? body.weekdays : existing.weekdays;
+      const weekdays = weekdaysRaw
+        ? (typeof weekdaysRaw === "string" ? JSON.parse(weekdaysRaw) : weekdaysRaw)
+        : [];
+      if (!Array.isArray(weekdays) || weekdays.length === 0) {
+        return NextResponse.json(
+          { error: "주간/격주 항목은 요일을 1개 이상 선택하세요" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validation: annual requires annualDate in MM-DD format
+    if (frequency === "annual") {
+      const annualDate = body.annualDate !== undefined ? body.annualDate : existing.annualDate;
+      if (!annualDate || !/^\d{2}-\d{2}$/.test(annualDate)) {
+        return NextResponse.json(
+          { error: "연간 항목은 날짜(MM-DD)를 입력하세요" },
+          { status: 400 }
+        );
+      }
+    }
+
+    const weekdaysStr = body.weekdays !== undefined
+      ? (body.weekdays ? (typeof body.weekdays === "string" ? body.weekdays : JSON.stringify(body.weekdays)) : null)
+      : existing.weekdays;
+
     db.update(fixedExpenses)
       .set({
         name: body.name ?? existing.name,
         category: body.category ?? existing.category,
         amount: body.amount !== undefined ? Number(body.amount) : existing.amount,
+        frequency: frequency ?? "monthly",
+        weekdays: weekdaysStr,
+        annualDate: body.annualDate !== undefined ? (body.annualDate || null) : existing.annualDate,
         paymentDay: body.paymentDay !== undefined ? (body.paymentDay ? Number(body.paymentDay) : null) : existing.paymentDay,
         paymentMethod: body.paymentMethod !== undefined ? body.paymentMethod : existing.paymentMethod,
         recipient: body.recipient !== undefined ? body.recipient : existing.recipient,

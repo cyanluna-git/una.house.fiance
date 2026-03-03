@@ -171,6 +171,20 @@ for (const col of newColumns) {
   }
 }
 
+// Migration: add frequency, weekdays, annual_date to fixed_expenses
+const fixedExpenseNewColumns = [
+  { name: "frequency", sql: `ALTER TABLE fixed_expenses ADD COLUMN frequency TEXT DEFAULT 'monthly'` },
+  { name: "weekdays", sql: `ALTER TABLE fixed_expenses ADD COLUMN weekdays TEXT` },
+  { name: "annual_date", sql: `ALTER TABLE fixed_expenses ADD COLUMN annual_date TEXT` },
+];
+for (const col of fixedExpenseNewColumns) {
+  try {
+    sqlite.exec(col.sql);
+  } catch {
+    // Column already exists - ignore
+  }
+}
+
 // Migration: if old 'category' column exists, migrate to 3-level
 try {
   const tableInfo = sqlite.prepare("PRAGMA table_info(transactions)").all() as any[];
