@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ```bash
-# Start development server (port 3101)
+# Start development server (port 3104)
 pnpm dev
 
 # Build for production
@@ -175,7 +175,7 @@ UI Layer
 Configuration
   next.config.ts             # Next.js settings
   tsconfig.json              # TypeScript strict mode enabled
-  package.json               # Dev server runs on port 3101 (-p flag)
+  package.json               # Dev server runs on port 3104 (-p flag)
 ```
 
 ---
@@ -192,7 +192,7 @@ No automated tests currently exist. For manual testing:
 
 ## Port Configuration
 
-Development server runs on **port 3101** (set in `package.json` dev script).
+Development server runs on **port 3104** (set in `package.json` dev script).
 Change with: `pnpm dev -p 3102`
 
 ---
