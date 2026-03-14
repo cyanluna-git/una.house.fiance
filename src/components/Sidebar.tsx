@@ -3,18 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-interface MenuItem {
+export interface MenuItem {
   label: string;
   href: string;
   icon: string;
 }
 
-interface MenuSection {
+export interface MenuSection {
   title?: string;
   items: MenuItem[];
 }
 
-const MENU: MenuSection[] = [
+export const MENU: MenuSection[] = [
   {
     items: [
       { label: "대시보드", href: "/", icon: "📊" },
@@ -54,24 +54,47 @@ const MENU: MenuSection[] = [
   },
 ];
 
-export default function Sidebar() {
+export const QUICK_ACTIONS: MenuItem[] = [
+  { label: "수동 입력", href: "/manual", icon: "✏️" },
+  { label: "거래 내역", href: "/transactions", icon: "💳" },
+  { label: "카드 관리", href: "/cards", icon: "🏧" },
+];
+
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-60 min-h-screen bg-slate-800 text-slate-300 flex flex-col shrink-0">
+    <aside
+      className={`fixed inset-y-0 left-0 z-20 w-64 bg-slate-900 text-slate-100 shadow-xl transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 lg:shadow-none ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
       {/* Logo */}
-      <div className="px-6 py-5 border-b border-slate-700">
+      <div className="px-5 py-5 border-b border-slate-700 flex items-center justify-between">
         <Link href="/" className="text-lg font-bold text-white">
           unahouse.finance
         </Link>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-100 lg:hidden"
+          aria-label="사이드바 닫기"
+        >
+          ✕
+        </button>
       </div>
 
       {/* Menu */}
-      <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
+      <nav className="h-[calc(100%-5rem)] overflow-y-auto px-3 py-4 space-y-6">
         {MENU.map((section, si) => (
           <div key={si}>
             {section.title && (
-              <div className="px-3 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <div className="px-3 mb-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 {section.title}
               </div>
             )}
@@ -82,6 +105,7 @@ export default function Sidebar() {
                   <li key={item.href}>
                     <Link
                       href={item.href}
+                      onClick={onClose}
                       className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
                         isActive
                           ? "bg-slate-700 text-white font-medium"
@@ -100,7 +124,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-slate-700 text-xs text-slate-500">
+      <div className="px-6 py-4 border-t border-slate-700 text-xs text-slate-400">
         v0.1.0
       </div>
     </aside>

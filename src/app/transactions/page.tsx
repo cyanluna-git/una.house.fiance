@@ -190,9 +190,9 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3 md:p-6">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-slate-900 mb-6">거래 내역</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 md:mb-6">거래 내역</h1>
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
@@ -290,14 +290,268 @@ export default function TransactionsPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow">
           {loading ? (
             <div className="p-8 text-center text-slate-600">로딩 중...</div>
           ) : transactions.length === 0 ? (
             <div className="p-8 text-center text-slate-600">거래 내역이 없습니다</div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className="md:hidden">
+                <div className="divide-y">
+                  {transactions.map((tx) => {
+                    const isEditing = editingId === tx.id;
+                    const display = getCardDisplayName(tx);
+
+                    return (
+                      <article key={tx.id} className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-slate-900 truncate">
+                              {display.name}
+                            </div>
+                            <div className="text-xs text-slate-500">{display.company}</div>
+                          </div>
+                          <div className="text-sm font-bold text-slate-900 whitespace-nowrap">
+                            {tx.amount.toLocaleString()}원
+                          </div>
+                        </div>
+
+                        <div className="mt-2 text-sm text-slate-700">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editData.merchant || ""}
+                              onChange={(e) =>
+                                setEditData({ ...editData, merchant: e.target.value })
+                              }
+                              className="w-full px-2 py-2 border border-slate-300 rounded text-sm"
+                            />
+                          ) : (
+                            <p className="leading-6">{tx.merchant}</p>
+                          )}
+                        </div>
+
+                        <div className="mt-2 text-xs text-slate-500 space-y-1">
+                          <div>
+                            거래일 {tx.aggregationDate || tx.date}
+                            {(tx.originalDate || tx.date) !== (tx.aggregationDate || tx.date) ? (
+                              <span className="ml-2">원거래일 {tx.originalDate || tx.date}</span>
+                            ) : null}
+                          </div>
+                          {tx.billingMonth && (
+                            <div className="text-[11px] text-slate-400">
+                              청구월 {tx.billingMonth}
+                            </div>
+                          )}
+                        </div>
+
+                        {isEditing ? (
+                          <div className="mt-3 space-y-2">
+                            <input
+                              type="date"
+                              value={editData.date || tx.originalDate || tx.date}
+                              onChange={(e) =>
+                                setEditData({ ...editData, date: e.target.value })
+                              }
+                              className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
+                            />
+                            <select
+                              value={editData.categoryL1 || ""}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...editData,
+                                  categoryL1: e.target.value,
+                                  categoryL2: "",
+                                  categoryL3: "",
+                                })
+                              }
+                              className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
+                            >
+                              {getL1Categories().map((cat) => (
+                                <option key={cat} value={cat}>
+                                  {cat}
+                                </option>
+                              ))}
+                            </select>
+                            {editData.categoryL1 &&
+                              getL2Categories(editData.categoryL1).length > 0 && (
+                                <select
+                                  value={editData.categoryL2 || ""}
+                                  onChange={(e) =>
+                                    setEditData({
+                                      ...editData,
+                                      categoryL2: e.target.value,
+                                      categoryL3: "",
+                                    })
+                                  }
+                                  className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
+                                >
+                                  <option value="">-</option>
+                                  {getL2Categories(editData.categoryL1).map((cat) => (
+                                    <option key={cat} value={cat}>
+                                      {cat}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            {editData.categoryL1 &&
+                              editData.categoryL2 &&
+                              getL3Categories(
+                                editData.categoryL1,
+                                editData.categoryL2
+                              ).length > 0 && (
+                                <select
+                                  value={editData.categoryL3 || ""}
+                                  onChange={(e) =>
+                                    setEditData({
+                                      ...editData,
+                                      categoryL3: e.target.value,
+                                    })
+                                  }
+                                  className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
+                                >
+                                  <option value="">-</option>
+                                  {getL3Categories(editData.categoryL1, editData.categoryL2).map(
+                                    (cat) => (
+                                      <option key={cat} value={cat}>
+                                        {cat}
+                                      </option>
+                                    )
+                                  )}
+                                </select>
+                              )}
+                            <select
+                              value={editData.necessity || "unset"}
+                              onChange={(e) =>
+                                setEditData({ ...editData, necessity: e.target.value })
+                              }
+                              className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
+                            >
+                              <option value="unset">-</option>
+                              <option value="essential">필수</option>
+                              <option value="discretionary">재량</option>
+                              <option value="waste">과소비</option>
+                            </select>
+                            {familyMembers.length > 0 && (
+                              <select
+                                value={editData.familyMemberId || ""}
+                                onChange={(e) =>
+                                  setEditData({
+                                    ...editData,
+                                    familyMemberId: e.target.value ? Number(e.target.value) : null,
+                                  })
+                                }
+                                className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
+                              >
+                                <option value="">구성원</option>
+                                {familyMembers.map((m) => (
+                                  <option key={m.id} value={m.id}>
+                                    {m.name} ({m.relation})
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                            {tripList.length > 0 && (
+                              <select
+                                value={editData.tripId || ""}
+                                onChange={(e) =>
+                                  setEditData({
+                                    ...editData,
+                                    tripId: e.target.value ? Number(e.target.value) : null,
+                                  })
+                                }
+                                className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
+                              >
+                                <option value="">여행</option>
+                                {tripList.map((t) => (
+                                  <option key={t.id} value={t.id}>
+                                    {t.name}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                            <label className="flex items-center gap-1 text-xs text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={!!editData.isCompanyExpense}
+                                onChange={(e) =>
+                                  setEditData({
+                                    ...editData,
+                                    isCompanyExpense: e.target.checked,
+                                  })
+                                }
+                                className="rounded border-slate-300"
+                              />
+                              회사경비
+                            </label>
+                            <div className="flex gap-2 pt-1">
+                              <button
+                                onClick={handleSave}
+                                className="px-3 py-2 text-sm font-semibold text-emerald-700 bg-emerald-50 rounded-lg"
+                              >
+                                저장
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="px-3 py-2 text-sm font-semibold text-slate-600 bg-slate-50 rounded-lg"
+                              >
+                                취소
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <span className="inline-flex px-2 py-1 rounded text-xs bg-blue-100 text-blue-700 font-medium">
+                              {tx.categoryL1}
+                            </span>
+                            {tx.categoryL2 && (
+                              <span className="inline-flex px-2 py-1 rounded text-xs bg-blue-50 text-blue-600">
+                                {tx.categoryL2}
+                              </span>
+                            )}
+                            {tx.necessity &&
+                              tx.necessity !== "unset" &&
+                              NECESSITY_LABELS[tx.necessity] && (
+                                <span
+                                  className={`inline-flex px-2 py-1 rounded text-xs font-medium ${NECESSITY_LABELS[tx.necessity].color}`}
+                                >
+                                  {NECESSITY_LABELS[tx.necessity].label}
+                                </span>
+                              )}
+                            {tx.isCompanyExpense && (
+                              <span className="inline-flex px-2 py-1 rounded text-xs bg-violet-100 text-violet-700">
+                                경비
+                              </span>
+                            )}
+                            {NON_CARD_METHODS[tx.cardCompany] ? (
+                              <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${NON_CARD_METHODS[tx.cardCompany]}`}>
+                                {tx.cardCompany}
+                              </span>
+                            ) : null}
+                            <div className="w-full mt-1 border-t pt-3 flex justify-end gap-2 text-sm">
+                              <button
+                                onClick={() => handleEdit(tx)}
+                                className="px-2.5 py-1.5 rounded bg-blue-600 text-white"
+                              >
+                                편집
+                              </button>
+                              <button
+                                onClick={() => handleDelete(tx.id)}
+                                className="px-2.5 py-1.5 rounded bg-red-50 text-red-700"
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-100 border-b">
                     <tr>
@@ -459,7 +713,6 @@ export default function TransactionsPage() {
                             </div>
                           )}
                         </td>
-                        {/* Necessity + Family + Trip */}
                         <td className="px-4 py-3 text-center">
                           {editingId === tx.id ? (
                             <div className="flex flex-col gap-1">
@@ -584,7 +837,6 @@ export default function TransactionsPage() {
                 </table>
               </div>
 
-              {/* Pagination */}
               <div className="px-4 py-4 bg-slate-50 border-t flex justify-between items-center">
                 <span className="text-sm text-slate-600">
                   전체 {total}건 (페이지 {page}/{totalPages})

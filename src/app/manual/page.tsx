@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getL1Categories, getL2Categories, getL3Categories } from "@/lib/categories";
 
 interface Trip {
@@ -45,9 +45,15 @@ export default function ManualPage() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [tripList, setTripList] = useState<Trip[]>([]);
+  const merchantRef = useRef<HTMLInputElement>(null);
+  const amountRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/trips").then((r) => r.json()).then((d) => setTripList(d.data || []));
+  }, []);
+
+  useEffect(() => {
+    amountRef.current?.focus();
   }, []);
 
   function switchMode(mode: EntryMode) {
@@ -112,6 +118,7 @@ export default function ManualPage() {
           note: "",
           tripId: "",
         });
+        amountRef.current?.focus();
       } else {
         setMessage({ type: "error", text: "저장 실패" });
       }
@@ -124,7 +131,7 @@ export default function ManualPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">수동 거래 입력</h1>
         <p className="text-slate-600 mb-6">
@@ -157,7 +164,7 @@ export default function ManualPage() {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-8">
+        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-4 md:p-6">
           {/* Date */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -166,10 +173,12 @@ export default function ManualPage() {
             <input
               type="date"
               value={formData.date}
+              inputMode="none"
               onChange={(e) =>
                 setFormData({ ...formData, date: e.target.value })
               }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              autoComplete="off"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
           </div>
@@ -236,8 +245,11 @@ export default function ManualPage() {
               onChange={(e) =>
                 setFormData({ ...formData, amount: e.target.value })
               }
+              inputMode="numeric"
               placeholder="0"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              ref={amountRef}
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              autoComplete="off"
               required
             />
           </div>
@@ -250,6 +262,7 @@ export default function ManualPage() {
             <input
               type="text"
               value={formData.merchant}
+              ref={merchantRef}
               onChange={(e) =>
                 setFormData({ ...formData, merchant: e.target.value })
               }
@@ -258,7 +271,9 @@ export default function ManualPage() {
                   ? "예: 마트, 병원비, 관리비, 학원비"
                   : "예: 1월 월급, 연금보험료, 전기요금"
               }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              autoComplete="off"
+              enterKeyHint="next"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
           </div>
