@@ -34,6 +34,7 @@ interface DashboardChartsProps {
   trendData: TrendItem[];
   trendCategories: string[];
   selectedMonth: string;
+  hideSecondaryCharts?: boolean;
 }
 
 export default function DashboardCharts({
@@ -45,6 +46,7 @@ export default function DashboardCharts({
   trendData,
   trendCategories,
   selectedMonth,
+  hideSecondaryCharts,
 }: DashboardChartsProps) {
   return (
     <>
@@ -77,6 +79,8 @@ export default function DashboardCharts({
         </div>
       )}
 
+      {!hideSecondaryCharts && (
+      <>
       {/* Charts Row 1: Monthly Bar + Category Pie */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-lg shadow p-6">
@@ -240,6 +244,8 @@ export default function DashboardCharts({
           <p className="text-slate-500 text-center py-12">데이터가 없습니다</p>
         )}
       </div>
+      </>
+      )}
     </>
   );
 }

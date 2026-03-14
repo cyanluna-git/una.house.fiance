@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useCallback, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { calcMonthlyAmount } from "@/lib/fixed-expense-calc";
 
 const DashboardCharts = dynamic(() => import("@/components/DashboardCharts"), {
@@ -86,6 +87,7 @@ export default function Home() {
   const [expandedL1, setExpandedL1] = useState<Set<string>>(new Set());
   const [modalCategory, setModalCategory] = useState<{ l1: string; l2?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showMoreCharts, setShowMoreCharts] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -369,8 +371,150 @@ export default function Home() {
   }
 
   return (
-    <div className="p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="p-4 lg:p-6">
+      <div className="lg:max-w-7xl lg:mx-auto">
+
+        {/* ===== MOBILE HERO (md:hidden) ===== */}
+        <div className="md:hidden space-y-4">
+          {/* Month selector - mobile */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-slate-900">대시보드</h1>
+            <select
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setExpandedL1(new Set());
+              }}
+              className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+            >
+              <option value="all">전체 기간</option>
+              {availableMonths.map((m) => (
+                <option key={m} value={m}>
+                  {m.replace("-", "년 ")}월
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Gradient hero card: current spend + MoM pill */}
+          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 text-white shadow-lg">
+            <p className="text-sm opacity-80">순수 가계지출</p>
+            <p className="text-3xl font-bold mt-1">{dash.pureHouseholdSpend.toLocaleString()}원</p>
+            {dash.momChange && (
+              <span
+                className={`inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  dash.momChange.amount <= 0
+                    ? "bg-green-400/20 text-green-100"
+                    : "bg-red-400/20 text-red-100"
+                }`}
+              >
+                {dash.momChange.amount > 0 ? "+" : ""}{formatAmount(dash.momChange.amount)}원
+                {dash.momChange.percent !== null && (
+                  <> ({dash.momChange.percent > 0 ? "▲" : "▼"}{Math.abs(dash.momChange.percent)}%)</>
+                )}
+              </span>
+            )}
+          </div>
+
+          {/* 2-col stat strip: savings rate + transaction count */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className={`rounded-xl p-4 text-white ${
+              dash.savingsRate !== null && dash.savingsRate >= 0
+                ? "bg-teal-500"
+                : "bg-red-500"
+            }`}>
+              <p className="text-xs opacity-80">저축률</p>
+              <p className="text-2xl font-bold">
+                {dash.savingsRate !== null ? `${dash.savingsRate}%` : "-"}
+              </p>
+            </div>
+            <div className="rounded-xl p-4 bg-white shadow border border-slate-200">
+              <p className="text-xs text-slate-500">거래 건수</p>
+              <p className="text-2xl font-bold text-slate-900">{dash.totalCount.toLocaleString()}건</p>
+            </div>
+          </div>
+
+          {/* Quick entry CTA */}
+          <Link
+            href="/manual"
+            className="flex items-center justify-center w-full min-h-[44px] rounded-xl bg-blue-600 text-white font-semibold text-base shadow-md active:bg-blue-700 transition"
+          >
+            지출 바로 입력
+          </Link>
+
+          {/* Top-3 categories with progress bars */}
+          {dash.categoryDetails.length > 0 && (
+            <div className="bg-white rounded-xl shadow border border-slate-200 p-4">
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">상위 카테고리</h3>
+              <div className="space-y-3">
+                {dash.categoryDetails.slice(0, 3).map((cat) => {
+                  const pct = dash.pureHouseholdSpend > 0
+                    ? Math.round((cat.total / dash.pureHouseholdSpend) * 100)
+                    : 0;
+                  return (
+                    <div key={cat.l1}>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="font-medium text-slate-800">{cat.l1}</span>
+                        <span className="text-slate-500">{cat.total.toLocaleString()}원 ({pct}%)</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-blue-500"
+                          style={{ width: `${Math.min(pct, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Link
+                href="/transactions"
+                className="flex items-center justify-center w-full min-h-[44px] mt-3 text-sm font-medium text-blue-600 active:text-blue-800 transition"
+              >
+                전체 카테고리 보기 &rarr;
+              </Link>
+            </div>
+          )}
+
+          {/* Income/expense chart (only) */}
+          <DashboardCharts
+            incomeExpenseData={dash.incomeExpenseData}
+            monthlyData={[]}
+            categoryData={[]}
+            necessityData={[]}
+            familySpendData={[]}
+            trendData={[]}
+            trendCategories={[]}
+            selectedMonth={selectedMonth}
+            hideSecondaryCharts
+          />
+
+          {/* Toggle for full charts */}
+          <button
+            type="button"
+            onClick={() => setShowMoreCharts((v) => !v)}
+            className="flex items-center justify-center w-full min-h-[44px] rounded-xl border border-slate-300 bg-white text-sm font-medium text-slate-700 shadow-sm active:bg-slate-50 transition"
+          >
+            {showMoreCharts ? "차트 접기" : "더보기"}
+          </button>
+
+          {showMoreCharts && (
+            <DashboardCharts
+              incomeExpenseData={[]}
+              monthlyData={dash.monthlyData}
+              categoryData={dash.categoryData}
+              necessityData={dash.necessityData}
+              familySpendData={dash.familySpendData}
+              trendData={dash.trendData}
+              trendCategories={dash.trendCategories}
+              selectedMonth={selectedMonth}
+            />
+          )}
+        </div>
+        {/* ===== END MOBILE HERO ===== */}
+
+        {/* ===== DESKTOP CONTENT (hidden on mobile) ===== */}
+        <div className="hidden md:block">
         {/* Header with Month Selector */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
@@ -571,6 +715,8 @@ export default function Home() {
           trendCategories={dash.trendCategories}
           selectedMonth={selectedMonth}
         />
+        </div>
+        {/* ===== END DESKTOP CONTENT ===== */}
       </div>
 
       {/* Category Transaction Detail Modal */}
