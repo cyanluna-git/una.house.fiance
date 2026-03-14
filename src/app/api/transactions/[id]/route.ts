@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { transactions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { normalizeTransactionDates } from "@/lib/statement-date";
 
 export async function PATCH(
   request: Request,
@@ -24,7 +25,27 @@ export async function PATCH(
     if (isCompanyExpense !== undefined) updates.isCompanyExpense = isCompanyExpense;
     if (note !== undefined) updates.note = note;
     if (merchant !== undefined) updates.merchant = merchant;
-    if (date !== undefined) updates.date = date;
+    if (date !== undefined) {
+      updates.date = date;
+      updates.originalDate = date;
+
+      const existing = db
+        .select()
+        .from(transactions)
+        .where(eq(transactions.id, id))
+        .get();
+
+      if (existing) {
+        const normalized = normalizeTransactionDates({
+          originalDate: date,
+          billingMonth: existing.billingMonth,
+          paymentMonthCandidate: existing.paymentMonthCandidate,
+        });
+        updates.aggregationDate = normalized.aggregationDate;
+        updates.aggregationMonth = normalized.aggregationMonth;
+        updates.aggregationBasis = normalized.aggregationBasis;
+      }
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "수정 항목이 없습니다" }, { status: 400 });

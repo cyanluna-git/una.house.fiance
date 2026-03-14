@@ -6,6 +6,12 @@ import { getL1Categories, getL2Categories, getL3Categories } from "@/lib/categor
 interface Transaction {
   id: number;
   date: string;
+  originalDate: string | null;
+  billingMonth: string | null;
+  paymentMonthCandidate: string | null;
+  aggregationDate: string | null;
+  aggregationMonth: string | null;
+  aggregationBasis: string | null;
   cardCompany: string;
   cardName: string | null;
   cardId: number | null;
@@ -314,14 +320,26 @@ export default function TransactionsPage() {
                           {editingId === tx.id ? (
                             <input
                               type="date"
-                              value={editData.date || tx.date}
+                              value={editData.date || tx.originalDate || tx.date}
                               onChange={(e) =>
                                 setEditData({ ...editData, date: e.target.value })
                               }
                               className="px-2 py-1 border border-slate-300 rounded text-sm w-[130px]"
                             />
                           ) : (
-                            tx.date
+                            <div>
+                              <div>{tx.aggregationDate || tx.date}</div>
+                              {(tx.originalDate || tx.date) !== (tx.aggregationDate || tx.date) && (
+                                <div className="text-xs text-slate-500">
+                                  원거래일 {tx.originalDate || tx.date}
+                                </div>
+                              )}
+                              {tx.billingMonth && (
+                                <div className="text-xs text-slate-400">
+                                  청구월 {tx.billingMonth}
+                                </div>
+                              )}
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm">

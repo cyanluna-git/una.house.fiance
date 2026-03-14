@@ -50,6 +50,7 @@ export function parseNonghyupCard(buffer: Buffer): ParsedTransaction[] {
 
       const merchant = String(row[colMap.merchant] || "").trim();
       const amount = parseAmount(colMap.amount !== undefined ? row[colMap.amount] : 0);
+      const installmentMonths = inferInstallmentMonths(merchant);
 
       if (!merchant || amount === 0) continue;
 
@@ -62,6 +63,7 @@ export function parseNonghyupCard(buffer: Buffer): ParsedTransaction[] {
         cardName: colMap.cardName !== undefined ? String(row[colMap.cardName] || "").trim() || undefined : undefined,
         merchant,
         amount,
+        installmentMonths,
         paymentAmount: colMap.paymentAmount !== undefined ? parseAmount(row[colMap.paymentAmount]) : 0,
         fee: colMap.fee !== undefined ? parseAmount(row[colMap.fee]) : 0,
         discount: 0,
@@ -102,4 +104,9 @@ function parseAmount(value: string | number | undefined): number {
     .trim();
   const amount = parseFloat(cleaned);
   return isNaN(amount) ? 0 : Math.round(amount);
+}
+
+function inferInstallmentMonths(merchant: string): number {
+  const match = merchant.match(/\((\d+)개월\)/);
+  return match ? parseInt(match[1], 10) : 0;
 }

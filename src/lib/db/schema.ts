@@ -4,6 +4,12 @@ import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 export const transactions = sqliteTable("transactions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   date: text("date").notNull(), // YYYY-MM-DD
+  originalDate: text("original_date"),
+  billingMonth: text("billing_month"),
+  paymentMonthCandidate: text("payment_month_candidate"),
+  aggregationDate: text("aggregation_date"),
+  aggregationMonth: text("aggregation_month"),
+  aggregationBasis: text("aggregation_basis"),
   cardCompany: text("card_company").notNull(),
   cardName: text("card_name"),
   merchant: text("merchant").notNull(),

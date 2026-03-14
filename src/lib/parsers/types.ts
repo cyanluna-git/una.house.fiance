@@ -1,5 +1,8 @@
 export interface ParsedTransaction {
   date: string;
+  originalDate?: string;
+  billingMonth?: string;
+  paymentMonthCandidate?: string;
   cardCompany: string;
   cardName?: string;
   merchant: string;

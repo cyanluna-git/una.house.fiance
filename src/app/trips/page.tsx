@@ -16,6 +16,7 @@ const TripCategoryChart = dynamic(
 interface TripTransaction {
   id: number;
   date: string;
+  originalDate: string | null;
   merchant: string;
   amount: number;
   categoryL2: string | null;
@@ -490,7 +491,14 @@ export default function TripsPage() {
                       key={tx.id}
                       className="border-b border-slate-100 hover:bg-slate-50"
                     >
-                      <td className="px-4 py-2 text-slate-600">{tx.date}</td>
+                      <td className="px-4 py-2 text-slate-600">
+                        <div>{tx.date}</div>
+                        {tx.originalDate && tx.originalDate !== tx.date && (
+                          <div className="text-xs text-slate-400">
+                            원거래일 {tx.originalDate}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-2 text-slate-600">
                         {tx.cardCompany}
                       </td>

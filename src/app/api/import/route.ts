@@ -3,6 +3,10 @@ import { db, sqlite } from "@/lib/db";
 import { transactions } from "@/lib/db/schema";
 import { parseFile } from "@/lib/parsers";
 import { categorizeMerchant } from "@/lib/categorizer";
+import {
+  normalizeTransactionDates,
+  parseStatementMonthFromFileName,
+} from "@/lib/statement-date";
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,9 +35,16 @@ export async function POST(request: NextRequest) {
     // Save to database
     const savedCount = parsedTransactions.length;
     const duplicateCount = 0;
+    const statementMonth = parseStatementMonthFromFileName(file.name);
 
     const transactionsToSave = parsedTransactions.map((t) => {
       const cat = categorizeMerchant(t.merchant);
+      const originalDate = t.originalDate || t.date;
+      const normalizedDates = normalizeTransactionDates({
+        originalDate,
+        billingMonth: t.billingMonth || statementMonth,
+        paymentMonthCandidate: t.paymentMonthCandidate || null,
+      });
 
       // Auto-link card_id if a matching card exists
       let cardId: number | null = null;
@@ -49,7 +60,13 @@ export async function POST(request: NextRequest) {
       }
 
       return {
-        date: t.date,
+        date: originalDate,
+        originalDate: normalizedDates.originalDate,
+        billingMonth: normalizedDates.billingMonth,
+        paymentMonthCandidate: normalizedDates.paymentMonthCandidate,
+        aggregationDate: normalizedDates.aggregationDate,
+        aggregationMonth: normalizedDates.aggregationMonth,
+        aggregationBasis: normalizedDates.aggregationBasis,
         cardCompany: t.cardCompany,
         cardName: t.cardName,
         merchant: t.merchant,

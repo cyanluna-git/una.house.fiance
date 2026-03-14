@@ -30,7 +30,8 @@ export async function GET() {
       const txList = db
         .select({
           id: transactions.id,
-          date: transactions.date,
+          date: transactions.aggregationDate,
+          originalDate: transactions.originalDate,
           merchant: transactions.merchant,
           amount: transactions.amount,
           categoryL2: transactions.categoryL2,
@@ -38,7 +39,7 @@ export async function GET() {
         })
         .from(transactions)
         .where(eq(transactions.tripId, trip.id))
-        .orderBy(desc(transactions.date))
+        .orderBy(desc(transactions.aggregationDate))
         .all();
 
       return {

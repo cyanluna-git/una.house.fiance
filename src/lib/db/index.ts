@@ -2,6 +2,10 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema";
 import path from "path";
+import {
+  normalizeTransactionDates,
+  parseStatementMonthFromFileName,
+} from "@/lib/statement-date";
 
 const dbPath = path.join(process.cwd(), "finance.db");
 const sqlite = new Database(dbPath);
@@ -13,6 +17,12 @@ sqlite.exec(`
   CREATE TABLE IF NOT EXISTS transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT NOT NULL,
+    original_date TEXT,
+    billing_month TEXT,
+    payment_month_candidate TEXT,
+    aggregation_date TEXT,
+    aggregation_month TEXT,
+    aggregation_basis TEXT,
     card_company TEXT NOT NULL,
     card_name TEXT,
     merchant TEXT NOT NULL,
@@ -162,6 +172,12 @@ const newColumns = [
   { name: "trip_id", sql: `ALTER TABLE transactions ADD COLUMN trip_id INTEGER` },
   { name: "is_company_expense", sql: `ALTER TABLE transactions ADD COLUMN is_company_expense INTEGER DEFAULT 0` },
   { name: "card_id", sql: `ALTER TABLE transactions ADD COLUMN card_id INTEGER` },
+  { name: "original_date", sql: `ALTER TABLE transactions ADD COLUMN original_date TEXT` },
+  { name: "billing_month", sql: `ALTER TABLE transactions ADD COLUMN billing_month TEXT` },
+  { name: "payment_month_candidate", sql: `ALTER TABLE transactions ADD COLUMN payment_month_candidate TEXT` },
+  { name: "aggregation_date", sql: `ALTER TABLE transactions ADD COLUMN aggregation_date TEXT` },
+  { name: "aggregation_month", sql: `ALTER TABLE transactions ADD COLUMN aggregation_month TEXT` },
+  { name: "aggregation_basis", sql: `ALTER TABLE transactions ADD COLUMN aggregation_basis TEXT` },
 ];
 for (const col of newColumns) {
   try {
@@ -221,6 +237,53 @@ try {
   }
 } catch (migrationError) {
   console.error("Migration check failed:", migrationError);
+}
+
+try {
+  const txRows = sqlite.prepare(`
+    SELECT id, date, original_date, billing_month, payment_month_candidate, source_file
+    FROM transactions
+  `).all() as Array<{
+    id: number;
+    date: string;
+    original_date: string | null;
+    billing_month: string | null;
+    payment_month_candidate: string | null;
+    source_file: string | null;
+  }>;
+
+  const updateDates = sqlite.prepare(`
+    UPDATE transactions
+    SET original_date = ?,
+        billing_month = ?,
+        payment_month_candidate = ?,
+        aggregation_date = ?,
+        aggregation_month = ?,
+        aggregation_basis = ?
+    WHERE id = ?
+  `);
+
+  for (const row of txRows) {
+    const originalDate = row.original_date || row.date;
+    const inferredStatementMonth = parseStatementMonthFromFileName(row.source_file);
+    const normalized = normalizeTransactionDates({
+      originalDate,
+      billingMonth: row.billing_month || inferredStatementMonth,
+      paymentMonthCandidate: row.payment_month_candidate || null,
+    });
+
+    updateDates.run(
+      normalized.originalDate,
+      normalized.billingMonth,
+      normalized.paymentMonthCandidate,
+      normalized.aggregationDate,
+      normalized.aggregationMonth,
+      normalized.aggregationBasis,
+      row.id
+    );
+  }
+} catch (migrationError) {
+  console.error("Transaction date normalization migration failed:", migrationError);
 }
 
 // Auto-seed category_rules if empty

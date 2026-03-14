@@ -14,6 +14,12 @@ const DashboardCharts = dynamic(() => import("@/components/DashboardCharts"), {
 interface Transaction {
   id: number;
   date: string;
+  originalDate: string | null;
+  billingMonth: string | null;
+  paymentMonthCandidate: string | null;
+  aggregationDate: string | null;
+  aggregationMonth: string | null;
+  aggregationBasis: string | null;
   cardCompany: string;
   merchant: string;
   amount: number;
@@ -65,6 +71,12 @@ const NECESSITY_COLORS: Record<string, { label: string; color: string }> = {
   unset: { label: "미분류", color: "#94a3b8" },
 };
 
+const getAggregationMonth = (transaction: Transaction) =>
+  transaction.aggregationMonth ||
+  transaction.aggregationDate?.substring(0, 7) ||
+  transaction.originalDate?.substring(0, 7) ||
+  transaction.date.substring(0, 7);
+
 export default function Home() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [allSalaries, setAllSalaries] = useState<SalaryStatement[]>([]);
@@ -105,7 +117,7 @@ export default function Home() {
   // Available months for dropdown (descending order)
   const availableMonths = useMemo(() => {
     const monthSet = new Set<string>();
-    for (const t of allTransactions) monthSet.add(t.date.substring(0, 7));
+    for (const t of allTransactions) monthSet.add(getAggregationMonth(t));
     for (const s of allSalaries) monthSet.add(s.pay_date.substring(0, 7));
     return Array.from(monthSet).sort().reverse();
   }, [allTransactions, allSalaries]);
@@ -115,7 +127,7 @@ export default function Home() {
     // === Filtered data for snapshot metrics ===
     const txs = selectedMonth === "all"
       ? allTransactions
-      : allTransactions.filter(t => t.date.startsWith(selectedMonth));
+      : allTransactions.filter(t => getAggregationMonth(t) === selectedMonth);
     const sals = selectedMonth === "all"
       ? allSalaries
       : allSalaries.filter(s => s.pay_date.startsWith(selectedMonth));
@@ -172,7 +184,7 @@ export default function Home() {
 
     // Savings rate
     const monthsInView = selectedMonth === "all"
-      ? Math.max(new Set(allTransactions.map(t => t.date.substring(0, 7))).size, 1)
+      ? Math.max(new Set(allTransactions.map(t => getAggregationMonth(t))).size, 1)
       : 1;
     const totalSpendWithFixed = pureTotal + (fixedMonthly * monthsInView);
     const savingsRate = incomeTotal > 0
@@ -183,7 +195,7 @@ export default function Home() {
     let momChange: { amount: number; percent: number | null } | null = null;
     const allMonthlyMap = new Map<string, number>();
     for (const t of allTransactions) {
-      const mk = t.date.substring(0, 7);
+      const mk = getAggregationMonth(t);
       allMonthlyMap.set(mk, (allMonthlyMap.get(mk) || 0) + Math.abs(t.amount));
     }
     const sortedAllMonths = Array.from(allMonthlyMap.keys()).sort();
@@ -272,7 +284,7 @@ export default function Home() {
     const trendMap = new Map<string, Map<string, number>>();
     const allCatMap = new Map<string, number>();
     for (const t of allTransactions) {
-      const mk = t.date.substring(0, 7);
+      const mk = getAggregationMonth(t);
       const cat = t.categoryL1 || "기타";
       const abs = Math.abs(t.amount);
       if (!trendMap.has(mk)) trendMap.set(mk, new Map());
@@ -329,7 +341,7 @@ export default function Home() {
     if (!modalCategory) return [];
     const txs = selectedMonth === "all"
       ? allTransactions
-      : allTransactions.filter(t => t.date.startsWith(selectedMonth));
+      : allTransactions.filter(t => getAggregationMonth(t) === selectedMonth);
     return txs
       .filter(t => {
         if ((t.categoryL1 || "기타") !== modalCategory.l1) return false;
@@ -606,7 +618,14 @@ export default function Home() {
                 <tbody>
                   {modalTransactions.map((tx) => (
                     <tr key={tx.id} className="border-b border-slate-50 hover:bg-slate-50/50">
-                      <td className="py-2 pr-2 text-slate-600 whitespace-nowrap">{tx.date}</td>
+                      <td className="py-2 pr-2 text-slate-600 whitespace-nowrap">
+                        <div>{tx.aggregationDate || tx.date}</div>
+                        {(tx.originalDate || tx.date) !== (tx.aggregationDate || tx.date) && (
+                          <div className="text-xs text-slate-400">
+                            원거래일 {tx.originalDate || tx.date}
+                          </div>
+                        )}
+                      </td>
                       <td className="py-2 pr-2 text-slate-400 text-xs whitespace-nowrap">{tx.cardCompany}</td>
                       <td className="py-2 pr-2 text-slate-800 truncate max-w-[200px]">{tx.merchant}</td>
                       <td className="py-2 text-right font-medium text-slate-900 whitespace-nowrap">

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { transactions } from "@/lib/db/schema";
-import { desc, and, gte, lte, eq } from "drizzle-orm";
+import { desc, and, gte, lte, eq, count } from "drizzle-orm";
 import { categorizeMerchant } from "@/lib/categorizer";
+import { normalizeTransactionDates } from "@/lib/statement-date";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,8 +21,8 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     const conditions: any[] = [];
-    if (from) conditions.push(gte(transactions.date, from));
-    if (to) conditions.push(lte(transactions.date, to));
+    if (from) conditions.push(gte(transactions.aggregationDate, from));
+    if (to) conditions.push(lte(transactions.aggregationDate, to));
     if (categoryL1) conditions.push(eq(transactions.categoryL1, categoryL1));
     if (categoryL2) conditions.push(eq(transactions.categoryL2, categoryL2));
     if (cardId) conditions.push(eq(transactions.cardId, Number(cardId)));
@@ -33,17 +34,17 @@ export async function GET(request: NextRequest) {
     }
 
     const result = query
-      .orderBy(desc(transactions.date))
+      .orderBy(desc(transactions.aggregationDate), desc(transactions.id))
       .limit(limit)
       .offset(offset)
       .all();
 
     // Get total count
-    const allData = conditions.length > 0
-      ? (db.select().from(transactions).where(and(...conditions)) as any).all()
-      : db.select().from(transactions).all();
-
-    const total = allData.length;
+    const totalQuery = db.select({ value: count() }).from(transactions);
+    const totalRow = conditions.length > 0
+      ? (totalQuery.where(and(...conditions)) as any).get()
+      : totalQuery.get();
+    const total = totalRow?.value || 0;
 
     return NextResponse.json({ data: result, total, page, limit });
   } catch (error) {
@@ -79,10 +80,20 @@ export async function POST(request: NextRequest) {
       ? { categoryL1, categoryL2: categoryL2 || "", categoryL3: categoryL3 || "", necessity: body.necessity || "unset" }
       : categorizeMerchant(merchant);
 
+    const normalizedDates = normalizeTransactionDates({
+      originalDate: date,
+    });
+
     const result = db
       .insert(transactions)
       .values({
         date,
+        originalDate: normalizedDates.originalDate,
+        billingMonth: normalizedDates.billingMonth,
+        paymentMonthCandidate: normalizedDates.paymentMonthCandidate,
+        aggregationDate: normalizedDates.aggregationDate,
+        aggregationMonth: normalizedDates.aggregationMonth,
+        aggregationBasis: normalizedDates.aggregationBasis,
         cardCompany: body.cardCompany || "수동입력",
         merchant,
         amount,
