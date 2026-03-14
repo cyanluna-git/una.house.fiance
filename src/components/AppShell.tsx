@@ -6,7 +6,7 @@ import Link from "next/link";
 import Sidebar, { type MenuItem } from "@/components/Sidebar";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 
-const PAGE_TITLES = {
+const PAGE_TITLES: Record<string, string> = {
   "/": "대시보드",
   "/cards": "카드 관리",
   "/transactions": "거래 내역",
@@ -31,7 +31,9 @@ const BOTTOM_NAV: MenuItem[] = [
 ];
 
 function getTitle(pathname: string): string {
-  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  if (Object.prototype.hasOwnProperty.call(PAGE_TITLES, pathname)) {
+    return PAGE_TITLES[pathname];
+  }
   if (pathname.startsWith("/manual")) return PAGE_TITLES["/manual"];
   if (pathname.startsWith("/transactions")) return PAGE_TITLES["/transactions"];
   if (pathname.startsWith("/analytics")) return PAGE_TITLES["/analytics"];
