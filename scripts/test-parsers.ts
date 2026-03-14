@@ -1,8 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { parseFile } from "../src/lib/parsers";
-
-const DATA_ROOT = "/Users/cyanluna-pro16/Library/CloudStorage/OneDrive-개인/Cyanluna/02_금융/unahouse_finance/raw";
+import { getDefaultDataRoot, resolveDataRoot } from "./data-root";
 
 const testFiles = [
   { company: "국민카드", relPath: "국민카드 명세서 2025.03~2026.02/국민카드_2025년 03월 명세서.xlsx" },
@@ -17,11 +16,21 @@ const testFiles = [
 console.log("=== 카드사별 파서 테스트 ===\n");
 
 async function runTests() {
+  const dataRoot = resolveDataRoot(process.argv[2]);
   let passed = 0;
   let failed = 0;
 
+  console.log(`📁 데이터 경로: ${dataRoot}\n`);
+
+  if (!fs.existsSync(dataRoot)) {
+    console.log(`[FAIL] 데이터 경로를 찾을 수 없습니다: ${dataRoot}`);
+    console.log(`기본값: ${getDefaultDataRoot()}`);
+    console.log("사용법: UNAHOUSE_IMPORT_ROOT=/path/to/raw pnpm test:parsers");
+    process.exit(1);
+  }
+
   for (const { company, relPath } of testFiles) {
-    const fullPath = path.join(DATA_ROOT, relPath);
+    const fullPath = path.join(dataRoot, relPath);
     const fileName = path.basename(fullPath).normalize("NFC");
 
     if (!fs.existsSync(fullPath)) {

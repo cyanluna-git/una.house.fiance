@@ -27,16 +27,28 @@ pnpm build
 # Run linter
 pnpm lint
 
-# Bulk import all Excel files from OneDrive (requires DB initialization)
+# Bulk import all Excel files from OneDrive (default path can be overridden)
 pnpm import
 
 # Test all 7 card company parsers
 pnpm test:parsers
 
+# Verify installment aggregation-month regression checks
+pnpm verify:aggregation
+
 # Database migrations (if needed)
 pnpm db:push
 pnpm db:generate
 ```
+
+Override OneDrive path when needed:
+
+```bash
+UNAHOUSE_IMPORT_ROOT=/path/to/raw pnpm import
+UNAHOUSE_IMPORT_ROOT=/path/to/raw pnpm test:parsers
+```
+
+Reimport fallback procedure: `scripts/REIMPORT.md`
 
 **Package Manager**: pnpm (not npm). Use `pnpm add <pkg>` to install new dependencies.
 

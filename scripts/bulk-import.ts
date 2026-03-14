@@ -4,14 +4,27 @@ import { db } from "../src/lib/db";
 import { transactions } from "../src/lib/db/schema";
 import { parseFile } from "../src/lib/parsers";
 import { categorizeMerchant } from "../src/lib/categorizer";
-
-const DATA_ROOT = "/Users/cyanluna-pro16/Library/CloudStorage/OneDrive-개인/Cyanluna/02_금융/unahouse_finance/raw";
+import {
+  normalizeTransactionDates,
+  parseStatementMonthFromFileName,
+} from "../src/lib/statement-date";
+import { getDefaultDataRoot, resolveDataRoot } from "./data-root";
 
 async function bulkImport() {
-  console.log("🚀 대량 임포트 시작...");
-  console.log(`📁 데이터 경로: ${DATA_ROOT}`);
+  const dataRoot = resolveDataRoot(process.argv[2]);
 
-  const files = collectFiles(DATA_ROOT);
+  console.log("🚀 대량 임포트 시작...");
+  console.log(`📁 데이터 경로: ${dataRoot}`);
+
+  if (!fs.existsSync(dataRoot)) {
+    console.error("✗ 데이터 경로를 찾을 수 없습니다.");
+    console.error(`  전달값: ${dataRoot}`);
+    console.error(`  기본값: ${getDefaultDataRoot()}`);
+    console.error("  사용법: UNAHOUSE_IMPORT_ROOT=/path/to/raw pnpm import");
+    process.exit(1);
+  }
+
+  const files = collectFiles(dataRoot);
   console.log(`📊 발견된 파일: ${files.length}개`);
 
   let importedCount = 0;
@@ -31,10 +44,24 @@ async function bulkImport() {
         continue;
       }
 
+      const statementMonth = parseStatementMonthFromFileName(fileName);
       const transactionsToSave = parsedTransactions.map((t) => {
         const cat = categorizeMerchant(t.merchant);
+        const originalDate = t.originalDate || t.date;
+        const normalizedDates = normalizeTransactionDates({
+          originalDate,
+          billingMonth: t.billingMonth || statementMonth,
+          paymentMonthCandidate: t.paymentMonthCandidate || null,
+        });
+
         return {
-          date: t.date,
+          date: originalDate,
+          originalDate: normalizedDates.originalDate,
+          billingMonth: normalizedDates.billingMonth,
+          paymentMonthCandidate: normalizedDates.paymentMonthCandidate,
+          aggregationDate: normalizedDates.aggregationDate,
+          aggregationMonth: normalizedDates.aggregationMonth,
+          aggregationBasis: normalizedDates.aggregationBasis,
           cardCompany: t.cardCompany,
           cardName: t.cardName,
           merchant: t.merchant,

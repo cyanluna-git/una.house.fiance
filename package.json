@@ -10,7 +10,8 @@
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "import": "tsx scripts/bulk-import.ts",
-    "test:parsers": "tsx scripts/test-parsers.ts"
+    "test:parsers": "tsx scripts/test-parsers.ts",
+    "verify:aggregation": "tsx scripts/verify-aggregation-month.ts"
   },
   "dependencies": {
     "better-sqlite3": "latest",
