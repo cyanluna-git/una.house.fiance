@@ -1,5 +1,5 @@
-import { execSync } from "child_process";
-import { writeFileSync, unlinkSync } from "fs";
+import { execFileSync } from "child_process";
+import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -23,33 +23,31 @@ export interface ParsedSalaryStatement {
 }
 
 function extractPdfText(buffer: Buffer, password: string): string {
-  const ts = Date.now();
-  const tmpInput = join(tmpdir(), `salary_in_${ts}.pdf`);
-  const tmpDecrypted = join(tmpdir(), `salary_dec_${ts}.pdf`);
+  const tmpDir = mkdtempSync(join(tmpdir(), "salary-parser-"));
+  const tmpInput = join(tmpDir, "input.pdf");
+  const tmpDecrypted = join(tmpDir, "decrypted.pdf");
 
   try {
     writeFileSync(tmpInput, buffer);
 
     // Try decrypting with password first
     try {
-      execSync(
-        `qpdf --password=${password} --decrypt "${tmpInput}" "${tmpDecrypted}"`,
-        { stdio: "pipe" }
-      );
+      execFileSync("qpdf", [`--password=${password}`, "--decrypt", tmpInput, tmpDecrypted], {
+        stdio: "pipe",
+      });
     } catch {
       // If decryption fails, the PDF might not be encrypted
-      execSync(`cp "${tmpInput}" "${tmpDecrypted}"`, { stdio: "pipe" });
+      copyFileSync(tmpInput, tmpDecrypted);
     }
 
-    const text = execSync(`pdftotext -layout "${tmpDecrypted}" -`, {
+    const text = execFileSync("pdftotext", ["-layout", tmpDecrypted, "-"], {
       stdio: "pipe",
       encoding: "utf-8",
     });
 
     return text;
   } finally {
-    try { unlinkSync(tmpInput); } catch {}
-    try { unlinkSync(tmpDecrypted); } catch {}
+    rmSync(tmpDir, { recursive: true, force: true });
   }
 }
 
