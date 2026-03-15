@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { transactions } from "@/lib/db/schema";
-import { desc, and, gte, lte, eq, count } from "drizzle-orm";
+import { desc, and, gte, lte, eq, count, type SQL } from "drizzle-orm";
 import { categorizeMerchant } from "@/lib/categorizer";
 import { normalizeTransactionDates } from "@/lib/statement-date";
 
@@ -9,8 +9,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const rawPage = parseInt(searchParams.get("page") ?? "1");
+    const rawLimit = parseInt(searchParams.get("limit") ?? "50");
+    const page = Number.isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
+    const limit = Number.isNaN(rawLimit) || rawLimit < 1 ? 50 : Math.min(rawLimit, 200);
     const from = searchParams.get("from");
     const to = searchParams.get("to");
     const categoryL1 = searchParams.get("categoryL1");
@@ -20,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     const offset = (page - 1) * limit;
 
-    const conditions: any[] = [];
+    const conditions: SQL[] = [];
     if (from) conditions.push(gte(transactions.aggregationDate, from));
     if (to) conditions.push(lte(transactions.aggregationDate, to));
     if (categoryL1) conditions.push(eq(transactions.categoryL1, categoryL1));
@@ -28,23 +30,22 @@ export async function GET(request: NextRequest) {
     if (cardId) conditions.push(eq(transactions.cardId, Number(cardId)));
     else if (cardCompany) conditions.push(eq(transactions.cardCompany, cardCompany));
 
-    let query = db.select().from(transactions);
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any;
-    }
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    const result = query
+    const result = db.select().from(transactions)
+      .$dynamic()
+      .where(whereClause)
       .orderBy(desc(transactions.aggregationDate), desc(transactions.id))
       .limit(limit)
       .offset(offset)
       .all();
 
     // Get total count
-    const totalQuery = db.select({ value: count() }).from(transactions);
-    const totalRow = conditions.length > 0
-      ? (totalQuery.where(and(...conditions)) as any).get()
-      : totalQuery.get();
-    const total = totalRow?.value || 0;
+    const totalRow = db.select({ value: count() }).from(transactions)
+      .$dynamic()
+      .where(whereClause)
+      .get();
+    const total = totalRow?.value ?? 0;
 
     return NextResponse.json({ data: result, total, page, limit });
   } catch (error) {
