@@ -1,4 +1,4 @@
-const CACHE_NAME = "unahouse-finance-v1";
+const CACHE_NAME = "unahouse-finance-v2";
 const APP_SHELL = [
   "/",
   "/?source=pwa",
@@ -40,6 +40,21 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.pathname.startsWith("/api/")) return;
 
+  // Navigation requests (HTML pages): network-first so new deploys are visible immediately
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request).then((response) => {
+        if (response.status === 200 && response.type === "basic") {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        }
+        return response;
+      }).catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Static assets: cache-first
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;

@@ -60,9 +60,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const title = useMemo(() => getTitle(pathname), [pathname]);
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className="min-h-screen bg-slate-100 text-slate-900 lg:flex">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <div className="min-h-screen lg:ml-64">
+      <div className="min-h-screen flex-1 min-w-0">
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur md:hidden">
           <div className="h-14 px-4 flex items-center gap-3">
             <button
