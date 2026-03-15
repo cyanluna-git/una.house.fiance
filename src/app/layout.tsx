@@ -1,12 +1,19 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0f172a",
+};
 
 export const metadata: Metadata = {
   title: "unahouse.finance - 개인 자산관리",
   description: "카드 명세서와 거래내역을 통합 관리하는 개인 자산관리 웹서비스",
   manifest: "/manifest.webmanifest",
-  themeColor: "#0f172a",
   applicationName: "unahouse.finance",
   icons: {
     icon: [
@@ -15,6 +22,12 @@ export const metadata: Metadata = {
     ],
     shortcut: "/icons/icon-192.svg",
     apple: "/icons/icon-192.svg",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-title": "unahouse.finance",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
   },
 };
 

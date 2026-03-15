@@ -1,6 +1,7 @@
 const CACHE_NAME = "unahouse-finance-v1";
 const APP_SHELL = [
   "/",
+  "/?source=pwa",
   "/transactions",
   "/cards",
   "/analytics",
@@ -35,6 +36,9 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+  if (url.pathname.startsWith("/api/")) return;
 
   event.respondWith(
     caches.match(request).then((cached) => {
