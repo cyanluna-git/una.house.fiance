@@ -33,6 +33,73 @@ const CARD_COMPANIES = [
 
 const CARD_TYPES = ["신용", "체크", "선불"];
 
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: 31 }, (_, i) => CURRENT_YEAR - 20 + i);
+const MONTHS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
+
+function formatYearMonth(dateStr: string | null): string {
+  if (!dateStr) return "-";
+  const match = dateStr.match(/^(\d{4})-(\d{2})/);
+  if (!match) return "-";
+  return `${match[1]}년 ${match[2]}월`;
+}
+
+function normalizeToFirstOfMonth(dateStr: string): string {
+  if (!dateStr) return "";
+  const match = dateStr.match(/^(\d{4})-(\d{2})/);
+  if (!match) return "";
+  return `${match[1]}-${match[2]}-01`;
+}
+
+function YearMonthPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const match = value.match(/^(\d{4})-(\d{2})/);
+  const selectedYear = match ? match[1] : "";
+  const selectedMonth = match ? match[2] : "";
+
+  function handleChange(year: string, month: string) {
+    if (year && month) {
+      onChange(`${year}-${month}-01`);
+    } else {
+      onChange("");
+    }
+  }
+
+  return (
+    <div className="flex gap-2">
+      <select
+        value={selectedYear}
+        onChange={(e) => handleChange(e.target.value, selectedMonth)}
+        className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm"
+      >
+        <option value="">연도</option>
+        {YEARS.map((y) => (
+          <option key={y} value={String(y)}>
+            {y}년
+          </option>
+        ))}
+      </select>
+      <select
+        value={selectedMonth}
+        onChange={(e) => handleChange(selectedYear, e.target.value)}
+        className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm"
+      >
+        <option value="">월</option>
+        {MONTHS.map((m) => (
+          <option key={m} value={m}>
+            {m}월
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 const companyBadge = (company: string) => {
   const colors: Record<string, string> = {
     국민카드: "bg-amber-100 text-amber-700",
@@ -166,8 +233,8 @@ export default function CardsPage() {
       cardNumber: card.cardNumber || "",
       cardType: card.cardType || "신용",
       annualFee: card.annualFee ? String(card.annualFee) : "",
-      issueDate: card.issueDate || "",
-      expiryDate: card.expiryDate || "",
+      issueDate: normalizeToFirstOfMonth(card.issueDate || ""),
+      expiryDate: normalizeToFirstOfMonth(card.expiryDate || ""),
       monthlyTarget: card.monthlyTarget ? String(card.monthlyTarget) : "",
       monthlyDiscountLimit: card.monthlyDiscountLimit
         ? String(card.monthlyDiscountLimit)
@@ -319,22 +386,18 @@ export default function CardsPage() {
           <label className="block text-sm font-medium text-slate-700 mb-1">
             발급일
           </label>
-          <input
-            type="date"
+          <YearMonthPicker
             value={data.issueDate}
-            onChange={(e) => setData(prev => ({ ...prev, issueDate: e.target.value }))}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            onChange={(val) => setData(prev => ({ ...prev, issueDate: val }))}
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
             만료일
           </label>
-          <input
-            type="date"
+          <YearMonthPicker
             value={data.expiryDate}
-            onChange={(e) => setData(prev => ({ ...prev, expiryDate: e.target.value }))}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            onChange={(val) => setData(prev => ({ ...prev, expiryDate: val }))}
           />
         </div>
 
@@ -496,11 +559,11 @@ export default function CardsPage() {
                   </div>
                   <div>
                     <span className="text-slate-500">발급일:</span>{" "}
-                    {card.issueDate || "-"}
+                    {formatYearMonth(card.issueDate)}
                   </div>
                   <div>
                     <span className="text-slate-500">만료일:</span>{" "}
-                    {card.expiryDate || "-"}
+                    {formatYearMonth(card.expiryDate)}
                   </div>
                   <div>
                     <span className="text-slate-500">실적 기준:</span>{" "}
