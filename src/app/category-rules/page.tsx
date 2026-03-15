@@ -122,7 +122,7 @@ export default function CategoryRulesPage() {
   // Edit rule
   const handleEdit = (rule: CategoryRule) => {
     setEditingId(rule.id);
-    setEditData({ ...rule });
+    setEditData(() => ({ ...rule }));
   };
 
   const handleSave = async () => {
@@ -336,7 +336,7 @@ export default function CategoryRulesPage() {
                   placeholder="가맹점 키워드"
                   value={newRule.keyword}
                   onChange={(e) =>
-                    setNewRule({ ...newRule, keyword: e.target.value })
+                    setNewRule(prev => ({ ...prev, keyword: e.target.value }))
                   }
                   className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm"
                 />
@@ -348,7 +348,7 @@ export default function CategoryRulesPage() {
                 {renderCategorySelectors(
                   newRule,
                   (updates) =>
-                    setNewRule({ ...newRule, ...updates } as typeof newRule),
+                    setNewRule(prev => ({ ...prev, ...updates } as typeof newRule)),
                   "text-sm"
                 )}
               </div>
@@ -360,7 +360,7 @@ export default function CategoryRulesPage() {
                   type="number"
                   value={newRule.priority}
                   onChange={(e) =>
-                    setNewRule({ ...newRule, priority: Number(e.target.value) })
+                    setNewRule(prev => ({ ...prev, priority: Number(e.target.value) }))
                   }
                   className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm"
                   min={0}
@@ -429,10 +429,10 @@ export default function CategoryRulesPage() {
                             type="text"
                             value={editData.keyword || ""}
                             onChange={(e) =>
-                              setEditData({
-                                ...editData,
+                              setEditData(prev => ({
+                                ...prev,
                                 keyword: e.target.value,
-                              })
+                              }))
                             }
                             className="w-full px-2 py-1 border border-slate-300 rounded text-sm"
                           />
@@ -451,7 +451,7 @@ export default function CategoryRulesPage() {
                               categoryL3: editData.categoryL3 || "",
                             },
                             (updates) =>
-                              setEditData({ ...editData, ...updates })
+                              setEditData(prev => ({ ...prev, ...updates }))
                           )}
                         </td>
                       ) : (
@@ -475,10 +475,10 @@ export default function CategoryRulesPage() {
                             type="number"
                             value={editData.priority ?? 0}
                             onChange={(e) =>
-                              setEditData({
-                                ...editData,
+                              setEditData(prev => ({
+                                ...prev,
                                 priority: Number(e.target.value),
-                              })
+                              }))
                             }
                             className="w-16 px-2 py-1 border border-slate-300 rounded text-xs text-center"
                             min={0}

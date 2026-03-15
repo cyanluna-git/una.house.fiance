@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 const LOAN_TYPES = ["장기주택", "차량", "학자금", "신용", "마이너스", "기타"];
 const RATE_TYPES = ["고정", "변동"];
@@ -332,7 +332,7 @@ export default function LoansPage() {
 
   const renderFormFields = (
     data: typeof INITIAL_FORM,
-    setData: (d: typeof INITIAL_FORM) => void
+    setData: React.Dispatch<React.SetStateAction<typeof INITIAL_FORM>>
   ) => (
     <>
       {/* 기본 정보 */}
@@ -341,7 +341,7 @@ export default function LoansPage() {
           <label className="block text-sm font-medium text-slate-700 mb-1">대출 유형 *</label>
           <select
             value={data.loanType}
-            onChange={(e) => setData({ ...data, loanType: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, loanType: e.target.value }))}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {LOAN_TYPES.map((t) => (
@@ -354,7 +354,7 @@ export default function LoansPage() {
           <input
             type="text"
             value={data.loanName}
-            onChange={(e) => setData({ ...data, loanName: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, loanName: e.target.value }))}
             placeholder="예: 주택담보대출"
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
@@ -365,7 +365,7 @@ export default function LoansPage() {
           <input
             type="text"
             value={data.purpose}
-            onChange={(e) => setData({ ...data, purpose: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, purpose: e.target.value }))}
             placeholder="예: 장기주택이자상환"
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -379,7 +379,7 @@ export default function LoansPage() {
           <input
             type="text"
             value={data.lender}
-            onChange={(e) => setData({ ...data, lender: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, lender: e.target.value }))}
             placeholder="예: 국민은행"
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
@@ -390,7 +390,7 @@ export default function LoansPage() {
           <input
             type="text"
             value={data.repayInstitution}
-            onChange={(e) => setData({ ...data, repayInstitution: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, repayInstitution: e.target.value }))}
             placeholder="금융기관과 다를 경우 입력"
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -404,7 +404,7 @@ export default function LoansPage() {
           <input
             type="number"
             value={data.originalAmount}
-            onChange={(e) => setData({ ...data, originalAmount: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, originalAmount: e.target.value }))}
             placeholder="원"
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
@@ -415,7 +415,7 @@ export default function LoansPage() {
           <input
             type="number"
             value={data.outstandingAmount}
-            onChange={(e) => setData({ ...data, outstandingAmount: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, outstandingAmount: e.target.value }))}
             placeholder="미입력 시 대출 원금과 동일"
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -430,7 +430,7 @@ export default function LoansPage() {
             type="number"
             step="0.01"
             value={data.interestRate}
-            onChange={(e) => setData({ ...data, interestRate: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, interestRate: e.target.value }))}
             placeholder="예: 3.5"
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
@@ -440,7 +440,7 @@ export default function LoansPage() {
           <label className="block text-sm font-medium text-slate-700 mb-1">금리 유형 *</label>
           <select
             value={data.rateType}
-            onChange={(e) => setData({ ...data, rateType: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, rateType: e.target.value }))}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {RATE_TYPES.map((t) => (
@@ -458,7 +458,7 @@ export default function LoansPage() {
             <input
               type="number"
               value={data.variablePeriodMonths}
-              onChange={(e) => setData({ ...data, variablePeriodMonths: e.target.value })}
+              onChange={(e) => setData(prev => ({ ...prev, variablePeriodMonths: e.target.value }))}
               placeholder="예: 6"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -469,7 +469,7 @@ export default function LoansPage() {
               type="number"
               step="0.01"
               value={data.variableNextRate}
-              onChange={(e) => setData({ ...data, variableNextRate: e.target.value })}
+              onChange={(e) => setData(prev => ({ ...prev, variableNextRate: e.target.value }))}
               placeholder="예: 4.2"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -483,7 +483,7 @@ export default function LoansPage() {
           <label className="block text-sm font-medium text-slate-700 mb-1">상환 방식</label>
           <select
             value={data.repayMethod}
-            onChange={(e) => setData({ ...data, repayMethod: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, repayMethod: e.target.value }))}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {REPAY_METHODS.map((m) => (
@@ -496,7 +496,7 @@ export default function LoansPage() {
           <input
             type="number"
             value={data.monthlyPayment}
-            onChange={(e) => setData({ ...data, monthlyPayment: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, monthlyPayment: e.target.value }))}
             placeholder="원"
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -505,7 +505,7 @@ export default function LoansPage() {
           <label className="block text-sm font-medium text-slate-700 mb-1">월 상환일</label>
           <select
             value={data.paymentDay}
-            onChange={(e) => setData({ ...data, paymentDay: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, paymentDay: e.target.value }))}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">선택</option>
@@ -523,7 +523,7 @@ export default function LoansPage() {
           <input
             type="date"
             value={data.startDate}
-            onChange={(e) => setData({ ...data, startDate: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, startDate: e.target.value }))}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -532,7 +532,7 @@ export default function LoansPage() {
           <input
             type="date"
             value={data.endDate}
-            onChange={(e) => setData({ ...data, endDate: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, endDate: e.target.value }))}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -543,7 +543,7 @@ export default function LoansPage() {
         <label className="block text-sm font-medium text-slate-700 mb-1">메모</label>
         <textarea
           value={data.note}
-          onChange={(e) => setData({ ...data, note: e.target.value })}
+          onChange={(e) => setData(prev => ({ ...prev, note: e.target.value }))}
           rows={2}
           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="추가 메모"
@@ -875,7 +875,7 @@ export default function LoansPage() {
                                     type="date"
                                     value={repaymentForm.date}
                                     onChange={(e) =>
-                                      setRepaymentForm({ ...repaymentForm, date: e.target.value })
+                                      setRepaymentForm(prev => ({ ...prev, date: e.target.value }))
                                     }
                                     className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
@@ -887,7 +887,7 @@ export default function LoansPage() {
                                     type="number"
                                     value={repaymentForm.principalAmount}
                                     onChange={(e) =>
-                                      setRepaymentForm({ ...repaymentForm, principalAmount: e.target.value })
+                                      setRepaymentForm(prev => ({ ...prev, principalAmount: e.target.value }))
                                     }
                                     placeholder="원"
                                     className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -899,7 +899,7 @@ export default function LoansPage() {
                                     type="number"
                                     value={repaymentForm.interestAmount}
                                     onChange={(e) =>
-                                      setRepaymentForm({ ...repaymentForm, interestAmount: e.target.value })
+                                      setRepaymentForm(prev => ({ ...prev, interestAmount: e.target.value }))
                                     }
                                     placeholder="원"
                                     className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -911,7 +911,7 @@ export default function LoansPage() {
                                     type="text"
                                     value={repaymentForm.memo}
                                     onChange={(e) =>
-                                      setRepaymentForm({ ...repaymentForm, memo: e.target.value })
+                                      setRepaymentForm(prev => ({ ...prev, memo: e.target.value }))
                                     }
                                     placeholder="메모 (선택)"
                                     className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"

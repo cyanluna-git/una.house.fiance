@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { calcMonthlyAmount } from "@/lib/fixed-expense-calc";
 
 interface FixedExpense {
@@ -217,7 +217,7 @@ export default function FixedExpensesPage() {
     return m ? `${m.name}(${m.relation})` : null;
   }
 
-  function toggleWeekday(data: typeof emptyForm, setData: (d: typeof emptyForm) => void, day: number) {
+  function toggleWeekday(data: typeof emptyForm, setData: React.Dispatch<React.SetStateAction<typeof emptyForm>>, day: number) {
     const wds: number[] = JSON.parse(data.weekdays || "[]");
     const idx = wds.indexOf(day);
     if (idx >= 0) {
@@ -226,12 +226,12 @@ export default function FixedExpensesPage() {
       wds.push(day);
       wds.sort();
     }
-    setData({ ...data, weekdays: JSON.stringify(wds) });
+    setData(prev => ({ ...prev, weekdays: JSON.stringify(wds) }));
   }
 
   function renderFormFields(
     data: typeof emptyForm,
-    setData: (d: typeof emptyForm) => void
+    setData: React.Dispatch<React.SetStateAction<typeof emptyForm>>
   ) {
     const freq = data.frequency || "monthly";
     const selectedWeekdays: number[] = JSON.parse(data.weekdays || "[]");
@@ -244,7 +244,7 @@ export default function FixedExpensesPage() {
           <input
             type="text"
             value={data.name}
-            onChange={(e) => setData({ ...data, name: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, name: e.target.value }))}
             placeholder="예: 양가적금, 아이용돈"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
             required
@@ -254,7 +254,7 @@ export default function FixedExpensesPage() {
           <label className="block text-sm font-medium text-slate-700 mb-1">분류 *</label>
           <select
             value={data.category}
-            onChange={(e) => setData({ ...data, category: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, category: e.target.value }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           >
             {CATEGORIES.map((c) => (
@@ -269,7 +269,7 @@ export default function FixedExpensesPage() {
           <input
             type="number"
             value={data.amount}
-            onChange={(e) => setData({ ...data, amount: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, amount: e.target.value }))}
             placeholder="0"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
             required
@@ -281,12 +281,12 @@ export default function FixedExpensesPage() {
           <label className="block text-sm font-medium text-slate-700 mb-1">반복 주기 *</label>
           <select
             value={data.frequency}
-            onChange={(e) => setData({
-              ...data,
+            onChange={(e) => setData(prev => ({
+              ...prev,
               frequency: e.target.value,
               weekdays: "[]",
               annualDate: "",
-            })}
+            }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           >
             {FREQUENCIES.map((f) => (
@@ -335,7 +335,7 @@ export default function FixedExpensesPage() {
             <input
               type="text"
               value={data.annualDate}
-              onChange={(e) => setData({ ...data, annualDate: e.target.value })}
+              onChange={(e) => setData(prev => ({ ...prev, annualDate: e.target.value }))}
               placeholder="03-15"
               pattern="\d{2}-\d{2}"
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
@@ -353,7 +353,7 @@ export default function FixedExpensesPage() {
             <label className="block text-sm font-medium text-slate-700 mb-1">이체일</label>
             <select
               value={data.paymentDay}
-              onChange={(e) => setData({ ...data, paymentDay: e.target.value })}
+              onChange={(e) => setData(prev => ({ ...prev, paymentDay: e.target.value }))}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
             >
               <option value="">-</option>
@@ -367,7 +367,7 @@ export default function FixedExpensesPage() {
           <label className="block text-sm font-medium text-slate-700 mb-1">이체방법</label>
           <select
             value={data.paymentMethod}
-            onChange={(e) => setData({ ...data, paymentMethod: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, paymentMethod: e.target.value }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           >
             {PAYMENT_METHODS.map((m) => (
@@ -380,7 +380,7 @@ export default function FixedExpensesPage() {
           <input
             type="text"
             value={data.recipient}
-            onChange={(e) => setData({ ...data, recipient: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, recipient: e.target.value }))}
             placeholder="예: 국민은행 xxx-xxx"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
@@ -392,7 +392,7 @@ export default function FixedExpensesPage() {
           <input
             type="date"
             value={data.startDate}
-            onChange={(e) => setData({ ...data, startDate: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, startDate: e.target.value }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
             required
           />
@@ -404,7 +404,7 @@ export default function FixedExpensesPage() {
           <input
             type="date"
             value={data.endDate}
-            onChange={(e) => setData({ ...data, endDate: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, endDate: e.target.value }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
         </div>
@@ -413,7 +413,7 @@ export default function FixedExpensesPage() {
             <label className="block text-sm font-medium text-slate-700 mb-1">귀속 구성원</label>
             <select
               value={data.familyMemberId}
-              onChange={(e) => setData({ ...data, familyMemberId: e.target.value })}
+              onChange={(e) => setData(prev => ({ ...prev, familyMemberId: e.target.value }))}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
             >
               <option value="">가계 공통</option>
@@ -429,7 +429,7 @@ export default function FixedExpensesPage() {
           <label className="block text-sm font-medium text-slate-700 mb-1">메모</label>
           <textarea
             value={data.note}
-            onChange={(e) => setData({ ...data, note: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, note: e.target.value }))}
             rows={2}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />

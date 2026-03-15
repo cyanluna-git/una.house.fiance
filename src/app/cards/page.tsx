@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 interface Card {
   id: number;
@@ -210,7 +210,7 @@ export default function CardsPage() {
 
   function renderFormFields(
     data: typeof emptyForm,
-    setData: (d: typeof emptyForm) => void
+    setData: React.Dispatch<React.SetStateAction<typeof emptyForm>>
   ) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -220,7 +220,7 @@ export default function CardsPage() {
           </label>
           <select
             value={data.cardCompany}
-            onChange={(e) => setData({ ...data, cardCompany: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, cardCompany: e.target.value }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           >
             {CARD_COMPANIES.map((c) => (
@@ -237,7 +237,7 @@ export default function CardsPage() {
           <input
             type="text"
             value={data.cardName}
-            onChange={(e) => setData({ ...data, cardName: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, cardName: e.target.value }))}
             placeholder="예: 탄탄대로, M포인트"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
             required
@@ -250,7 +250,7 @@ export default function CardsPage() {
           <input
             type="text"
             value={data.cardNumber}
-            onChange={(e) => setData({ ...data, cardNumber: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, cardNumber: e.target.value }))}
             placeholder="1234"
             maxLength={4}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
@@ -263,7 +263,7 @@ export default function CardsPage() {
           </label>
           <select
             value={data.cardType}
-            onChange={(e) => setData({ ...data, cardType: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, cardType: e.target.value }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           >
             {CARD_TYPES.map((t) => (
@@ -281,7 +281,7 @@ export default function CardsPage() {
             type="text"
             inputMode="numeric"
             value={formatCurrency(data.annualFee)}
-            onChange={(e) => setData({ ...data, annualFee: rawNumber(e.target.value) })}
+            onChange={(e) => setData(prev => ({ ...prev, annualFee: rawNumber(e.target.value) }))}
             placeholder="0"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
@@ -294,7 +294,7 @@ export default function CardsPage() {
             type="text"
             inputMode="numeric"
             value={formatCurrency(data.monthlyTarget)}
-            onChange={(e) => setData({ ...data, monthlyTarget: rawNumber(e.target.value) })}
+            onChange={(e) => setData(prev => ({ ...prev, monthlyTarget: rawNumber(e.target.value) }))}
             placeholder="300,000"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
@@ -309,7 +309,7 @@ export default function CardsPage() {
             inputMode="numeric"
             value={formatCurrency(data.monthlyDiscountLimit)}
             onChange={(e) =>
-              setData({ ...data, monthlyDiscountLimit: rawNumber(e.target.value) })
+              setData(prev => ({ ...prev, monthlyDiscountLimit: rawNumber(e.target.value) }))
             }
             placeholder="50,000"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
@@ -322,7 +322,7 @@ export default function CardsPage() {
           <input
             type="date"
             value={data.issueDate}
-            onChange={(e) => setData({ ...data, issueDate: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, issueDate: e.target.value }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
         </div>
@@ -333,7 +333,7 @@ export default function CardsPage() {
           <input
             type="date"
             value={data.expiryDate}
-            onChange={(e) => setData({ ...data, expiryDate: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, expiryDate: e.target.value }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
         </div>
@@ -346,7 +346,7 @@ export default function CardsPage() {
             <select
               value={data.familyMemberId}
               onChange={(e) =>
-                setData({ ...data, familyMemberId: e.target.value })
+                setData(prev => ({ ...prev, familyMemberId: e.target.value }))
               }
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
             >
@@ -366,7 +366,7 @@ export default function CardsPage() {
           <textarea
             value={data.mainBenefits}
             onChange={(e) =>
-              setData({ ...data, mainBenefits: e.target.value })
+              setData(prev => ({ ...prev, mainBenefits: e.target.value }))
             }
             rows={2}
             placeholder="예: 주유 5%, 통신 10%, 편의점 5%"
@@ -380,7 +380,7 @@ export default function CardsPage() {
           </label>
           <textarea
             value={data.note}
-            onChange={(e) => setData({ ...data, note: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, note: e.target.value }))}
             rows={2}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />

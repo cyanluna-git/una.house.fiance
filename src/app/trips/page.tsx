@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 
 const TripCategoryChart = dynamic(
@@ -145,7 +145,7 @@ export default function TripsPage() {
 
   function renderFormFields(
     data: typeof emptyForm,
-    setData: (d: typeof emptyForm) => void
+    setData: React.Dispatch<React.SetStateAction<typeof emptyForm>>
   ) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -156,7 +156,7 @@ export default function TripsPage() {
           <input
             type="text"
             value={data.name}
-            onChange={(e) => setData({ ...data, name: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, name: e.target.value }))}
             placeholder="예: 2025 제주 가족여행"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
             required
@@ -169,7 +169,7 @@ export default function TripsPage() {
           <input
             type="text"
             value={data.destination}
-            onChange={(e) => setData({ ...data, destination: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, destination: e.target.value }))}
             placeholder="예: 제주도"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
@@ -181,7 +181,7 @@ export default function TripsPage() {
           <input
             type="date"
             value={data.startDate}
-            onChange={(e) => setData({ ...data, startDate: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, startDate: e.target.value }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
         </div>
@@ -192,7 +192,7 @@ export default function TripsPage() {
           <input
             type="date"
             value={data.endDate}
-            onChange={(e) => setData({ ...data, endDate: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, endDate: e.target.value }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
         </div>
@@ -203,7 +203,7 @@ export default function TripsPage() {
           <input
             type="number"
             value={data.budget}
-            onChange={(e) => setData({ ...data, budget: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, budget: e.target.value }))}
             placeholder="0"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
@@ -214,7 +214,7 @@ export default function TripsPage() {
           </label>
           <textarea
             value={data.note}
-            onChange={(e) => setData({ ...data, note: e.target.value })}
+            onChange={(e) => setData(prev => ({ ...prev, note: e.target.value }))}
             rows={2}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />

@@ -85,7 +85,7 @@ export default function FamilyPage() {
               <input
                 type="text"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                 required
               />
@@ -96,7 +96,7 @@ export default function FamilyPage() {
               </label>
               <select
                 value={form.relation}
-                onChange={(e) => setForm({ ...form, relation: e.target.value })}
+                onChange={(e) => setForm(prev => ({ ...prev, relation: e.target.value }))}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
               >
                 {RELATIONS.map((r) => (
@@ -114,7 +114,7 @@ export default function FamilyPage() {
                 type="number"
                 value={form.birthYear}
                 onChange={(e) =>
-                  setForm({ ...form, birthYear: e.target.value })
+                  setForm(prev => ({ ...prev, birthYear: e.target.value }))
                 }
                 placeholder="예: 1990"
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
@@ -127,7 +127,7 @@ export default function FamilyPage() {
               <input
                 type="text"
                 value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                onChange={(e) => setForm(prev => ({ ...prev, note: e.target.value }))}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
               />
             </div>

@@ -205,7 +205,7 @@ export default function TransactionsPage() {
                 type="date"
                 value={filters.from}
                 onChange={(e) =>
-                  setFilters({ ...filters, from: e.target.value })
+                  setFilters(prev => ({ ...prev, from: e.target.value }))
                 }
                 className="w-full px-3 py-2 border border-slate-300 rounded"
               />
@@ -217,7 +217,7 @@ export default function TransactionsPage() {
               <input
                 type="date"
                 value={filters.to}
-                onChange={(e) => setFilters({ ...filters, to: e.target.value })}
+                onChange={(e) => setFilters(prev => ({ ...prev, to: e.target.value }))}
                 className="w-full px-3 py-2 border border-slate-300 rounded"
               />
             </div>
@@ -228,7 +228,7 @@ export default function TransactionsPage() {
               <select
                 value={filters.categoryL1}
                 onChange={(e) =>
-                  setFilters({ ...filters, categoryL1: e.target.value, categoryL2: "" })
+                  setFilters(prev => ({ ...prev, categoryL1: e.target.value, categoryL2: "" }))
                 }
                 className="w-full px-3 py-2 border border-slate-300 rounded"
               >
@@ -247,7 +247,7 @@ export default function TransactionsPage() {
               <select
                 value={filters.categoryL2}
                 onChange={(e) =>
-                  setFilters({ ...filters, categoryL2: e.target.value })
+                  setFilters(prev => ({ ...prev, categoryL2: e.target.value }))
                 }
                 className="w-full px-3 py-2 border border-slate-300 rounded"
                 disabled={!filters.categoryL1}
@@ -267,7 +267,7 @@ export default function TransactionsPage() {
               </label>
               <select
                 value={filters.card}
-                onChange={(e) => setFilters({ ...filters, card: e.target.value })}
+                onChange={(e) => setFilters(prev => ({ ...prev, card: e.target.value }))}
                 className="w-full px-3 py-2 border border-slate-300 rounded"
               >
                 <option value="">모두</option>
@@ -323,7 +323,7 @@ export default function TransactionsPage() {
                               type="text"
                               value={editData.merchant || ""}
                               onChange={(e) =>
-                                setEditData({ ...editData, merchant: e.target.value })
+                                setEditData(prev => ({ ...prev, merchant: e.target.value }))
                               }
                               className="w-full px-2 py-2 border border-slate-300 rounded text-sm"
                             />
@@ -352,19 +352,19 @@ export default function TransactionsPage() {
                               type="date"
                               value={editData.date || tx.originalDate || tx.date}
                               onChange={(e) =>
-                                setEditData({ ...editData, date: e.target.value })
+                                setEditData(prev => ({ ...prev, date: e.target.value }))
                               }
                               className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
                             />
                             <select
                               value={editData.categoryL1 || ""}
                               onChange={(e) =>
-                                setEditData({
-                                  ...editData,
+                                setEditData(prev => ({
+                                  ...prev,
                                   categoryL1: e.target.value,
                                   categoryL2: "",
                                   categoryL3: "",
-                                })
+                                }))
                               }
                               className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
                             >
@@ -379,11 +379,11 @@ export default function TransactionsPage() {
                                 <select
                                   value={editData.categoryL2 || ""}
                                   onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
+                                    setEditData(prev => ({
+                                      ...prev,
                                       categoryL2: e.target.value,
                                       categoryL3: "",
-                                    })
+                                    }))
                                   }
                                   className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
                                 >
@@ -404,10 +404,10 @@ export default function TransactionsPage() {
                                 <select
                                   value={editData.categoryL3 || ""}
                                   onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
+                                    setEditData(prev => ({
+                                      ...prev,
                                       categoryL3: e.target.value,
-                                    })
+                                    }))
                                   }
                                   className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
                                 >
@@ -424,7 +424,7 @@ export default function TransactionsPage() {
                             <select
                               value={editData.necessity || "unset"}
                               onChange={(e) =>
-                                setEditData({ ...editData, necessity: e.target.value })
+                                setEditData(prev => ({ ...prev, necessity: e.target.value }))
                               }
                               className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
                             >
@@ -437,10 +437,10 @@ export default function TransactionsPage() {
                               <select
                                 value={editData.familyMemberId || ""}
                                 onChange={(e) =>
-                                  setEditData({
-                                    ...editData,
+                                  setEditData(prev => ({
+                                    ...prev,
                                     familyMemberId: e.target.value ? Number(e.target.value) : null,
-                                  })
+                                  }))
                                 }
                                 className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
                               >
@@ -456,10 +456,10 @@ export default function TransactionsPage() {
                               <select
                                 value={editData.tripId || ""}
                                 onChange={(e) =>
-                                  setEditData({
-                                    ...editData,
+                                  setEditData(prev => ({
+                                    ...prev,
                                     tripId: e.target.value ? Number(e.target.value) : null,
-                                  })
+                                  }))
                                 }
                                 className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
                               >
@@ -476,10 +476,10 @@ export default function TransactionsPage() {
                                 type="checkbox"
                                 checked={!!editData.isCompanyExpense}
                                 onChange={(e) =>
-                                  setEditData({
-                                    ...editData,
+                                  setEditData(prev => ({
+                                    ...prev,
                                     isCompanyExpense: e.target.checked,
-                                  })
+                                  }))
                                 }
                                 className="rounded border-slate-300"
                               />
@@ -576,7 +576,7 @@ export default function TransactionsPage() {
                               type="date"
                               value={editData.date || tx.originalDate || tx.date}
                               onChange={(e) =>
-                                setEditData({ ...editData, date: e.target.value })
+                                setEditData(prev => ({ ...prev, date: e.target.value }))
                               }
                               className="px-2 py-1 border border-slate-300 rounded text-sm w-[130px]"
                             />
@@ -614,10 +614,10 @@ export default function TransactionsPage() {
                               type="text"
                               value={editData.merchant || ""}
                               onChange={(e) =>
-                                setEditData({
-                                  ...editData,
+                                setEditData(prev => ({
+                                  ...prev,
                                   merchant: e.target.value,
-                                })
+                                }))
                               }
                               className="w-full px-2 py-1 border border-slate-300 rounded text-sm"
                             />
@@ -634,12 +634,12 @@ export default function TransactionsPage() {
                               <select
                                 value={editData.categoryL1 || ""}
                                 onChange={(e) =>
-                                  setEditData({
-                                    ...editData,
+                                  setEditData(prev => ({
+                                    ...prev,
                                     categoryL1: e.target.value,
                                     categoryL2: "",
                                     categoryL3: "",
-                                  })
+                                  }))
                                 }
                                 className="px-2 py-1 border border-slate-300 rounded text-xs"
                               >
@@ -654,11 +654,11 @@ export default function TransactionsPage() {
                                   <select
                                     value={editData.categoryL2 || ""}
                                     onChange={(e) =>
-                                      setEditData({
-                                        ...editData,
+                                      setEditData(prev => ({
+                                        ...prev,
                                         categoryL2: e.target.value,
                                         categoryL3: "",
-                                      })
+                                      }))
                                     }
                                     className="px-2 py-1 border border-slate-300 rounded text-xs"
                                   >
@@ -681,10 +681,10 @@ export default function TransactionsPage() {
                                   <select
                                     value={editData.categoryL3 || ""}
                                     onChange={(e) =>
-                                      setEditData({
-                                        ...editData,
+                                      setEditData(prev => ({
+                                        ...prev,
                                         categoryL3: e.target.value,
-                                      })
+                                      }))
                                     }
                                     className="px-2 py-1 border border-slate-300 rounded text-xs"
                                   >
@@ -719,7 +719,7 @@ export default function TransactionsPage() {
                               <select
                                 value={editData.necessity || "unset"}
                                 onChange={(e) =>
-                                  setEditData({ ...editData, necessity: e.target.value })
+                                  setEditData(prev => ({ ...prev, necessity: e.target.value }))
                                 }
                                 className="px-2 py-1 border border-slate-300 rounded text-xs"
                               >
@@ -732,10 +732,10 @@ export default function TransactionsPage() {
                                 <select
                                   value={editData.familyMemberId || ""}
                                   onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
+                                    setEditData(prev => ({
+                                      ...prev,
                                       familyMemberId: e.target.value ? Number(e.target.value) : null,
-                                    })
+                                    }))
                                   }
                                   className="px-2 py-1 border border-slate-300 rounded text-xs"
                                 >
@@ -751,10 +751,10 @@ export default function TransactionsPage() {
                                 <select
                                   value={editData.tripId || ""}
                                   onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
+                                    setEditData(prev => ({
+                                      ...prev,
                                       tripId: e.target.value ? Number(e.target.value) : null,
-                                    })
+                                    }))
                                   }
                                   className="px-2 py-1 border border-slate-300 rounded text-xs"
                                 >
@@ -771,10 +771,10 @@ export default function TransactionsPage() {
                                   type="checkbox"
                                   checked={!!editData.isCompanyExpense}
                                   onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
+                                    setEditData(prev => ({
+                                      ...prev,
                                       isCompanyExpense: e.target.checked,
-                                    })
+                                    }))
                                   }
                                   className="rounded border-slate-300"
                                 />
