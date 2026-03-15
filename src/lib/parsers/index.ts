@@ -21,7 +21,7 @@ export function detectCardCompany(fileName: string): CardCompany {
   if (lower.includes("현대")) return "현대카드";
   if (lower.includes("롯데")) return "롯데카드";
   if (lower.includes("신한")) return "신한카드";
-  if (lower.includes("하나")) return "하나카드";
+  if (lower.includes("하나") || lower.includes("트래블로그")) return "하나카드";
   if (lower.includes("우리")) return "우리카드";
 
   throw new Error(`카드사를 인식할 수 없음: ${fileName}`);

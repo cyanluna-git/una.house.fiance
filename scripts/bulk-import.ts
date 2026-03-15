@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { db } from "../src/lib/db";
+import { db, sqlite } from "../src/lib/db";
 import { transactions } from "../src/lib/db/schema";
 import { parseFile } from "../src/lib/parsers";
 import { categorizeMerchant } from "../src/lib/categorizer";
@@ -36,7 +36,7 @@ async function bulkImport() {
 
     try {
       const buffer = fs.readFileSync(filePath);
-      const parsedTransactions = await parseFile(buffer, fileName);
+      const parsedTransactions = await parseFile(buffer, fileName, password);
 
       if (parsedTransactions.length === 0) {
         console.log(`⏭️  ${fileName}: 거래 내역 없음`);
@@ -97,10 +97,19 @@ async function bulkImport() {
     }
   }
 
+  syncCardsFromTransactions();
+
   console.log("\n📈 임포트 완료!");
   console.log(`✓ 성공: ${importedCount}개 파일`);
   console.log(`✗ 실패: ${failedCount}개 파일`);
   console.log(`⏭️  스킵: ${skippedCount}개 파일`);
+
+  return {
+    importedCount,
+    failedCount,
+    skippedCount,
+    discoveredFiles: files.length,
+  };
 }
 
 function collectFiles(dirPath: string, fileList: string[] = []): string[] {
@@ -120,4 +129,9 @@ function collectFiles(dirPath: string, fileList: string[] = []): string[] {
   return fileList;
 }
 
-bulkImport().catch(console.error);
+if (require.main === module) {
+  bulkImport({
+    dataRoot: process.env.IMPORT_DATA_ROOT,
+    password: process.env.IMPORT_PASSWORD,
+  }).catch(console.error);
+}

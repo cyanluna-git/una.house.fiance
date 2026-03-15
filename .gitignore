@@ -16,6 +16,7 @@ dist/
 finance.db
 finance.db-shm
 finance.db-wal
+tmp-db-backups/
 
 # drizzle
 /drizzle
@@ -46,6 +47,9 @@ Thumbs.db
 workthrough/.vitepress/cache/
 workthrough/.vitepress/dist/
 workthrough/node_modules/
+
+# build cache
+tsconfig.tsbuildinfo
 
 # claude
 .claude/

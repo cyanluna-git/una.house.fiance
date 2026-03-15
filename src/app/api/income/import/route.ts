@@ -25,7 +25,12 @@ export async function POST(request: Request) {
         const buffer = Buffer.from(await file.arrayBuffer());
         const parsed = parseSalaryPdf(buffer, password);
 
-        if (!parsed.payDate || !parsed.grossPay) {
+        if (
+          !parsed.payDate ||
+          parsed.grossPay <= 0 ||
+          parsed.netPay <= 0 ||
+          parsed.items.length === 0
+        ) {
           results.push({
             fileName: file.name,
             success: false,
