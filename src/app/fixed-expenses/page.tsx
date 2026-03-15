@@ -132,8 +132,9 @@ export default function FixedExpensesPage() {
     }, 0);
   }, [activeExpenses]);
 
-  function isFormValid(data: typeof emptyForm): boolean {
-    if (!data.name.trim() || !data.amount || !data.startDate) return false;
+  function isFormValid(data: typeof emptyForm, mode: "new" | "edit" = "edit"): boolean {
+    if (!data.name.trim() || !data.amount) return false;
+    if (mode === "edit" && !data.startDate) return false;
     if (data.frequency === "weekly" || data.frequency === "biweekly") {
       const wds: number[] = JSON.parse(data.weekdays || "[]");
       if (wds.length === 0) return false;
@@ -146,12 +147,13 @@ export default function FixedExpensesPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!isFormValid(form)) return;
+    if (!isFormValid(form, "new")) return;
 
+    const today = new Date().toISOString().split("T")[0];
     await fetch("/api/fixed-expenses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, startDate: today }),
     });
 
     setForm(emptyForm);
@@ -160,7 +162,7 @@ export default function FixedExpensesPage() {
   }
 
   async function handleUpdate(id: number) {
-    if (!isFormValid(editForm)) return;
+    if (!isFormValid(editForm, "edit")) return;
 
     await fetch(`/api/fixed-expenses/${id}`, {
       method: "PUT",
@@ -231,7 +233,8 @@ export default function FixedExpensesPage() {
 
   function renderFormFields(
     data: typeof emptyForm,
-    setData: React.Dispatch<React.SetStateAction<typeof emptyForm>>
+    setData: React.Dispatch<React.SetStateAction<typeof emptyForm>>,
+    mode: "new" | "edit" = "edit"
   ) {
     const freq = data.frequency || "monthly";
     const selectedWeekdays: number[] = JSON.parse(data.weekdays || "[]");
@@ -375,39 +378,45 @@ export default function FixedExpensesPage() {
             ))}
           </select>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">수취처/계좌</label>
-          <input
-            type="text"
-            value={data.recipient}
-            onChange={(e) => setData(prev => ({ ...prev, recipient: e.target.value }))}
-            placeholder="예: 국민은행 xxx-xxx"
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-          />
-        </div>
+        {mode === "edit" && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">수취처/계좌</label>
+            <input
+              type="text"
+              value={data.recipient}
+              onChange={(e) => setData(prev => ({ ...prev, recipient: e.target.value }))}
+              placeholder="예: 국민은행 xxx-xxx"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            />
+          </div>
+        )}
 
         {/* Row 4 */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">시작일 *</label>
-          <input
-            type="date"
-            value={data.startDate}
-            onChange={(e) => setData(prev => ({ ...prev, startDate: e.target.value }))}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            종료일 <span className="text-xs text-slate-400">(없으면 진행중)</span>
-          </label>
-          <input
-            type="date"
-            value={data.endDate}
-            onChange={(e) => setData(prev => ({ ...prev, endDate: e.target.value }))}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-          />
-        </div>
+        {mode === "edit" && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">시작일 *</label>
+            <input
+              type="date"
+              value={data.startDate}
+              onChange={(e) => setData(prev => ({ ...prev, startDate: e.target.value }))}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+              required
+            />
+          </div>
+        )}
+        {mode === "edit" && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              종료일 <span className="text-xs text-slate-400">(없으면 진행중)</span>
+            </label>
+            <input
+              type="date"
+              value={data.endDate}
+              onChange={(e) => setData(prev => ({ ...prev, endDate: e.target.value }))}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            />
+          </div>
+        )}
         {familyMembers.length > 0 && (
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">귀속 구성원</label>
@@ -508,11 +517,11 @@ export default function FixedExpensesPage() {
             {editingId === expense.id ? (
               <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
                 <h3 className="text-sm font-semibold text-amber-800 mb-3">수정</h3>
-                {renderFormFields(editForm, setEditForm)}
+                {renderFormFields(editForm, setEditForm, "edit")}
                 <div className="mt-3 flex gap-2">
                   <button
                     onClick={() => handleUpdate(expense.id)}
-                    disabled={!isFormValid(editForm)}
+                    disabled={!isFormValid(editForm, "edit")}
                     className="bg-amber-600 text-white px-4 py-1.5 rounded text-sm hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     저장
@@ -609,11 +618,11 @@ export default function FixedExpensesPage() {
           className="bg-white rounded-xl shadow p-6 mb-6 border border-slate-200"
         >
           <h2 className="text-lg font-semibold text-slate-700 mb-4">새 고정지출 등록</h2>
-          {renderFormFields(form, setForm)}
+          {renderFormFields(form, setForm, "new")}
           <div className="mt-4 flex gap-2">
             <button
               type="submit"
-              disabled={!isFormValid(form)}
+              disabled={!isFormValid(form, "new")}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               등록

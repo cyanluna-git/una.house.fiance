@@ -17,13 +17,14 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    if (!body.name || !body.category || !body.amount || !body.startDate) {
+    if (!body.name || !body.category || !body.amount) {
       return NextResponse.json(
-        { error: "필수 정보(항목명, 분류, 금액, 시작일)를 입력하세요" },
+        { error: "필수 정보(항목명, 분류, 금액)를 입력하세요" },
         { status: 400 }
       );
     }
 
+    const startDate = body.startDate || new Date().toISOString().split("T")[0];
     const frequency = body.frequency || "monthly";
 
     // Validation: weekly/biweekly require non-empty weekdays
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
         paymentMethod: body.paymentMethod || null,
         recipient: body.recipient || null,
         familyMemberId: body.familyMemberId ? Number(body.familyMemberId) : null,
-        startDate: body.startDate,
+        startDate: startDate,
         endDate: body.endDate || null,
         isActive: body.endDate ? false : true,
         note: body.note || null,
