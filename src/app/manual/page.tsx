@@ -18,7 +18,18 @@ interface Trip {
 const PAYMENT_METHODS = [
   { value: "현금", label: "현금" },
   { value: "계좌이체", label: "이체" },
-  { value: "자동이체", label: "자동" },
+  { value: "카드", label: "카드" },
+  { value: "지역상품권", label: "상품권" },
+] as const;
+
+const CARD_COMPANIES = [
+  "국민카드",
+  "신한카드",
+  "현대카드",
+  "하나카드",
+  "우리카드",
+  "롯데카드",
+  "농협카드",
 ] as const;
 
 const INCOME_OTHER_TYPES = [
@@ -100,6 +111,7 @@ export default function ManualPage() {
   // --- form state (retained fields persist across saves) ---
   const [date, setDate] = useState(todayString);
   const [paymentMethod, setPaymentMethod] = useState("현금");
+  const [cardCompany, setCardCompany] = useState<string>(CARD_COMPANIES[0]);
   const [transactionType, setTransactionType] = useState("salary");
   const [categoryL1, setCategoryL1] = useState("기타");
   const [categoryL2, setCategoryL2] = useState("미분류");
@@ -199,8 +211,9 @@ export default function ManualPage() {
       };
 
       if (entryMode === "expense") {
-        body.cardCompany = paymentMethod;
         body.paymentType = paymentMethod;
+        body.cardCompany =
+          paymentMethod === "카드" ? cardCompany : paymentMethod;
       } else {
         body.paymentType = transactionType;
       }
@@ -370,7 +383,12 @@ export default function ManualPage() {
                   <button
                     key={method.value}
                     type="button"
-                    onClick={() => setPaymentMethod(method.value)}
+                    onClick={() => {
+                      setPaymentMethod(method.value);
+                      if (method.value !== "카드") {
+                        setCardCompany(CARD_COMPANIES[0]);
+                      }
+                    }}
                     className={`flex-1 min-h-[44px] rounded-xl border text-sm font-medium transition-colors ${
                       isActive
                         ? "border-blue-500 bg-blue-50 text-blue-700"
@@ -382,6 +400,19 @@ export default function ManualPage() {
                 );
               })}
             </div>
+            {paymentMethod === "카드" && (
+              <select
+                value={cardCompany}
+                onChange={(e) => setCardCompany(e.target.value)}
+                className="mt-2 w-full min-h-[44px] rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+              >
+                {CARD_COMPANIES.map((company) => (
+                  <option key={company} value={company}>
+                    {company}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         ) : (
           <div>
