@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3104",
     "build": "next build",
+    "deploy": "next build && systemctl --user restart unahouse-finance.service",
     "start": "next start",
     "lint": "next lint",
     "db:push": "drizzle-kit push",
