@@ -1,4 +1,4 @@
-const CACHE_NAME = "unahouse-finance-v2";
+const CACHE_NAME = "unahouse-finance-v3";
 const APP_SHELL = [
   "/",
   "/?source=pwa",
