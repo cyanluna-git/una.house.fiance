@@ -286,6 +286,48 @@ try {
   console.error("Transaction date normalization migration failed:", migrationError);
 }
 
+// Dedup existing transactions before creating UNIQUE index
+try {
+  sqlite.exec(`
+    DELETE FROM transactions
+    WHERE id NOT IN (
+      SELECT MIN(id) FROM transactions
+      GROUP BY date, merchant, amount, card_company
+    )
+  `);
+} catch (dedupError) {
+  console.error("Transaction dedup failed:", dedupError);
+}
+
+// Dedup existing category_rules before creating UNIQUE index
+try {
+  sqlite.exec(`
+    DELETE FROM category_rules
+    WHERE id NOT IN (
+      SELECT MIN(id) FROM category_rules
+      GROUP BY keyword
+    )
+  `);
+} catch (dedupError) {
+  console.error("Category rules dedup failed:", dedupError);
+}
+
+// Create indexes
+sqlite.exec(`
+  CREATE UNIQUE INDEX IF NOT EXISTS uq_txn_date_merchant_amount_card
+    ON transactions(date, merchant, amount, card_company);
+  CREATE INDEX IF NOT EXISTS idx_txn_trip_id ON transactions(trip_id);
+  CREATE INDEX IF NOT EXISTS idx_txn_card_id ON transactions(card_id);
+  CREATE INDEX IF NOT EXISTS idx_txn_family_member_id ON transactions(family_member_id);
+  CREATE INDEX IF NOT EXISTS idx_txn_date ON transactions(date);
+  CREATE INDEX IF NOT EXISTS idx_txn_card_company ON transactions(card_company);
+  CREATE INDEX IF NOT EXISTS idx_txn_aggregation_month ON transactions(aggregation_month);
+  CREATE UNIQUE INDEX IF NOT EXISTS uq_category_rules_keyword ON category_rules(keyword);
+  CREATE INDEX IF NOT EXISTS idx_splits_transaction_id ON transaction_splits(transaction_id);
+  CREATE INDEX IF NOT EXISTS idx_salary_items_statement_id ON salary_items(statement_id);
+  CREATE INDEX IF NOT EXISTS idx_loan_repayments_loan_id ON loan_repayments(loan_id);
+`);
+
 // Auto-seed category_rules if empty
 const ruleCount = sqlite.prepare("SELECT COUNT(*) as cnt FROM category_rules").get() as { cnt: number };
 if (ruleCount.cnt === 0) {

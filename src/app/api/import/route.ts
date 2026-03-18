@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, sqlite } from "@/lib/db";
-import { transactions } from "@/lib/db/schema";
+import { sqlite } from "@/lib/db";
 import { parseFile } from "@/lib/parsers";
 import { categorizeMerchant } from "@/lib/categorizer";
 import {
@@ -33,8 +32,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Save to database
-    const savedCount = parsedTransactions.length;
-    const duplicateCount = 0;
+    let savedCount = 0;
+    let duplicateCount = 0;
     const statementMonth = parseStatementMonthFromFileName(file.name);
 
     const transactionsToSave = parsedTransactions.map((t) => {
@@ -89,7 +88,44 @@ export async function POST(request: NextRequest) {
     });
 
     try {
-      db.insert(transactions).values(transactionsToSave).run();
+      const insertOne = sqlite.prepare(`
+        INSERT INTO transactions (
+          date, original_date, billing_month, payment_month_candidate,
+          aggregation_date, aggregation_month, aggregation_basis,
+          card_company, card_name, merchant, amount, payment_type,
+          installment_months, installment_seq, payment_amount, fee, discount,
+          category_l1, category_l2, category_l3, necessity,
+          source_file, source_type, is_manual, card_id
+        ) VALUES (
+          ?, ?, ?, ?,
+          ?, ?, ?,
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?,
+          ?, ?, ?, ?
+        )
+        ON CONFLICT(date, merchant, amount, card_company) DO NOTHING
+      `);
+
+      const runAll = sqlite.transaction((rows: typeof transactionsToSave) => {
+        for (const t of rows) {
+          const result = insertOne.run(
+            t.date, t.originalDate, t.billingMonth, t.paymentMonthCandidate,
+            t.aggregationDate, t.aggregationMonth, t.aggregationBasis,
+            t.cardCompany, t.cardName, t.merchant, t.amount, t.paymentType,
+            t.installmentMonths, t.installmentSeq, t.paymentAmount, t.fee, t.discount,
+            t.categoryL1, t.categoryL2, t.categoryL3, t.necessity,
+            t.sourceFile, t.sourceType, t.isManual ? 1 : 0, t.cardId,
+          );
+          if (result.changes > 0) {
+            savedCount++;
+          } else {
+            duplicateCount++;
+          }
+        }
+      });
+
+      runAll(transactionsToSave);
     } catch (dbError) {
       console.error("DB insert error:", dbError);
     }

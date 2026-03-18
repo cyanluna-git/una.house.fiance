@@ -1,5 +1,12 @@
 import { sql } from "drizzle-orm";
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  text,
+  integer,
+  real,
+  index,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 export const transactions = sqliteTable("transactions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -33,7 +40,17 @@ export const transactions = sqliteTable("transactions", {
   isCompanyExpense: integer("is_company_expense", { mode: "boolean" }).default(false),
   cardId: integer("card_id"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
-});
+}, (table) => ({
+  uqTxnDateMerchantAmountCard: uniqueIndex("uq_txn_date_merchant_amount_card").on(
+    table.date, table.merchant, table.amount, table.cardCompany,
+  ),
+  idxTxnTripId: index("idx_txn_trip_id").on(table.tripId),
+  idxTxnCardId: index("idx_txn_card_id").on(table.cardId),
+  idxTxnFamilyMemberId: index("idx_txn_family_member_id").on(table.familyMemberId),
+  idxTxnDate: index("idx_txn_date").on(table.date),
+  idxTxnCardCompany: index("idx_txn_card_company").on(table.cardCompany),
+  idxTxnAggregationMonth: index("idx_txn_aggregation_month").on(table.aggregationMonth),
+}));
 
 export const categoryRules = sqliteTable("category_rules", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -42,7 +59,9 @@ export const categoryRules = sqliteTable("category_rules", {
   categoryL2: text("category_l2").notNull().default(""),
   categoryL3: text("category_l3").notNull().default(""),
   priority: integer("priority").default(0),
-});
+}, (table) => ({
+  uqCategoryRulesKeyword: uniqueIndex("uq_category_rules_keyword").on(table.keyword),
+}));
 
 export const salaryStatements = sqliteTable("salary_statements", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -65,7 +84,9 @@ export const salaryItems = sqliteTable("salary_items", {
   type: text("type").notNull(), // 'payment' or 'deduction'
   name: text("name").notNull(),
   amount: integer("amount").notNull(),
-});
+}, (table) => ({
+  idxSalaryItemsStatementId: index("idx_salary_items_statement_id").on(table.statementId),
+}));
 
 export const loans = sqliteTable("loans", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -118,7 +139,9 @@ export const transactionSplits = sqliteTable("transaction_splits", {
   amount: integer("amount").notNull(),
   necessity: text("necessity").default("unset"),
   note: text("note"),
-});
+}, (table) => ({
+  idxSplitsTransactionId: index("idx_splits_transaction_id").on(table.transactionId),
+}));
 
 export const fixedExpenses = sqliteTable("fixed_expenses", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -165,7 +188,9 @@ export const loanRepayments = sqliteTable("loan_repayments", {
   memo: text("memo"),
   linkedTransactionId: integer("linked_transaction_id"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
-});
+}, (table) => ({
+  idxLoanRepaymentsLoanId: index("idx_loan_repayments_loan_id").on(table.loanId),
+}));
 
 export type LoanRepayment = typeof loanRepayments.$inferSelect;
 export type NewLoanRepayment = typeof loanRepayments.$inferInsert;
