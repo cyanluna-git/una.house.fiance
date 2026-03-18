@@ -186,3 +186,30 @@ export interface DashboardResponse {
     children: { categoryL2: string; amount: number; count: number }[];
   }[];
 }
+
+/** API response shape for GET /api/categories/analytics */
+export interface CategoryAnalyticsResponse {
+  availableMonths: string[];
+  categoryTrend: Array<Record<string, string | number> & { month: string }>;
+  l2Breakdown: Array<{
+    categoryL1: string;
+    categoryL2: string;
+    amount: number;
+    count: number;
+    months: { month: string; amount: number }[];
+  }>;
+  necessityTrend: Array<{
+    month: string;
+    essential: number;
+    discretionary: number;
+    waste: number;
+    unset: number;
+  }>;
+  familyCategoryMatrix: Array<Record<string, string | number> & { memberName: string }>;
+  summary: {
+    totalAmount: number;
+    topL1: string;
+    topL2: string;
+    avgMonthly: number;
+  };
+}
