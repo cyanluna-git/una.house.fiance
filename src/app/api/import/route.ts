@@ -17,6 +17,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "파일을 선택하세요" }, { status: 400 });
     }
 
+    // File size validation (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "파일 크기가 50MB를 초과합니다" },
+        { status: 413 }
+      );
+    }
+
+    // File type validation (.xlsx, .xls only)
+    const ext = file.name.toLowerCase().split(".").pop();
+    if (ext !== "xlsx" && ext !== "xls") {
+      return NextResponse.json(
+        { error: "xlsx 또는 xls 파일만 지원합니다" },
+        { status: 400 }
+      );
+    }
+
     const buffer = await file.arrayBuffer();
     const parsedTransactions = await parseFile(
       Buffer.from(buffer),
@@ -36,6 +53,19 @@ export async function POST(request: NextRequest) {
     let duplicateCount = 0;
     const statementMonth = parseStatementMonthFromFileName(file.name);
 
+    // Batch-load all cards to avoid N+1 queries
+    let cardMap = new Map<string, number>();
+    try {
+      const allCards = sqlite
+        .prepare("SELECT id, card_company, card_name FROM cards")
+        .all() as { id: number; card_company: string; card_name: string }[];
+      cardMap = new Map(
+        allCards.map((c) => [`${c.card_company}|${c.card_name}`, c.id])
+      );
+    } catch {
+      // cards table might not exist yet
+    }
+
     const transactionsToSave = parsedTransactions.map((t) => {
       const cat = categorizeMerchant(t.merchant);
       const originalDate = t.originalDate || t.date;
@@ -45,18 +75,9 @@ export async function POST(request: NextRequest) {
         paymentMonthCandidate: t.paymentMonthCandidate || null,
       });
 
-      // Auto-link card_id if a matching card exists
-      let cardId: number | null = null;
-      try {
-        const card = sqlite
-          .prepare(
-            "SELECT id FROM cards WHERE card_company = ? AND card_name = ? LIMIT 1"
-          )
-          .get(t.cardCompany, t.cardName || "") as { id: number } | undefined;
-        if (card) cardId = card.id;
-      } catch {
-        // cards table might not exist yet
-      }
+      // Auto-link card_id from pre-loaded card map
+      const cardId =
+        cardMap.get(`${t.cardCompany}|${t.cardName || ""}`) ?? null;
 
       return {
         date: originalDate,

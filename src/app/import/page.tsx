@@ -40,6 +40,21 @@ export default function ImportPage() {
     setError(null);
     setResult(null);
 
+    // Client-side file size validation (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      setError("파일 크기가 50MB를 초과합니다");
+      setUploading(false);
+      return;
+    }
+
+    // Client-side file type validation (.xlsx, .xls only)
+    const ext = file.name.toLowerCase().split(".").pop();
+    if (ext !== "xlsx" && ext !== "xls") {
+      setError("xlsx 또는 xls 파일만 지원합니다");
+      setUploading(false);
+      return;
+    }
+
     try {
       const formData = new FormData();
       formData.append("file", file);

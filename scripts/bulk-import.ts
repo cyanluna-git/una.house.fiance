@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { db, sqlite } from "../src/lib/db";
+import { db } from "../src/lib/db";
 import { transactions } from "../src/lib/db/schema";
 import { parseFile } from "../src/lib/parsers";
 import { categorizeMerchant } from "../src/lib/categorizer";
@@ -10,8 +10,9 @@ import {
 } from "../src/lib/statement-date";
 import { getDefaultDataRoot, resolveDataRoot } from "./data-root";
 
-async function bulkImport() {
-  const dataRoot = resolveDataRoot(process.argv[2]);
+export async function bulkImport(opts?: { dataRoot?: string; password?: string }) {
+  const password = opts?.password;
+  const dataRoot = resolveDataRoot(opts?.dataRoot || process.argv[2]);
 
   console.log("🚀 대량 임포트 시작...");
   console.log(`📁 데이터 경로: ${dataRoot}`);
@@ -110,6 +111,10 @@ async function bulkImport() {
     skippedCount,
     discoveredFiles: files.length,
   };
+}
+
+function syncCardsFromTransactions(): void {
+  // TODO: implement card sync from imported transactions
 }
 
 function collectFiles(dirPath: string, fileList: string[] = []): string[] {
