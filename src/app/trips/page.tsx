@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type { Trip, TripTransaction } from "@/types";
+import { Button, FormField, Modal, ErrorBanner, EmptyState } from "@/components";
 
 const TripCategoryChart = dynamic(
   () => import("@/components/TripCategoryChart"),
@@ -46,17 +47,6 @@ export default function TripsPage() {
   useEffect(() => {
     fetchTrips();
   }, [fetchTrips]);
-
-  // ESC key to close modal
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setModalData(null);
-    }
-    if (modalData) {
-      document.addEventListener("keydown", handleKeyDown);
-      return () => document.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [modalData]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -137,10 +127,7 @@ export default function TripsPage() {
   ) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            여행명 *
-          </label>
+        <FormField label="여행명" required>
           <input
             type="text"
             value={data.name}
@@ -149,11 +136,8 @@ export default function TripsPage() {
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
             required
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            목적지
-          </label>
+        </FormField>
+        <FormField label="목적지">
           <input
             type="text"
             value={data.destination}
@@ -161,33 +145,24 @@ export default function TripsPage() {
             placeholder="예: 제주도"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            시작일
-          </label>
+        </FormField>
+        <FormField label="시작일">
           <input
             type="date"
             value={data.startDate}
             onChange={(e) => setData(prev => ({ ...prev, startDate: e.target.value }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            종료일
-          </label>
+        </FormField>
+        <FormField label="종료일">
           <input
             type="date"
             value={data.endDate}
             onChange={(e) => setData(prev => ({ ...prev, endDate: e.target.value }))}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            예산 (원)
-          </label>
+        </FormField>
+        <FormField label="예산 (원)">
           <input
             type="number"
             value={data.budget}
@@ -195,18 +170,15 @@ export default function TripsPage() {
             placeholder="0"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            메모
-          </label>
+        </FormField>
+        <FormField label="메모" className="md:col-span-2">
           <textarea
             value={data.note}
             onChange={(e) => setData(prev => ({ ...prev, note: e.target.value }))}
             rows={2}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
-        </div>
+        </FormField>
       </div>
     );
   }
@@ -215,11 +187,7 @@ export default function TripsPage() {
     <div className="p-6 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold text-slate-800 mb-6">여행 관리</h1>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" aria-live="assertive">
-          {error}
-        </div>
-      )}
+      <ErrorBanner message={error} />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -242,12 +210,13 @@ export default function TripsPage() {
       </div>
 
       {/* Add Form Toggle */}
-      <button
+      <Button
+        variant="primary"
         onClick={() => setShowForm(!showForm)}
-        className="mb-4 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition"
+        className="mb-4"
       >
         {showForm ? "접기" : "+ 여행 등록"}
-      </button>
+      </Button>
 
       {showForm && (
         <form
@@ -257,22 +226,19 @@ export default function TripsPage() {
           <h2 className="text-lg font-semibold text-slate-700 mb-4">새 여행 등록</h2>
           {renderFormFields(form, setForm)}
           <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-blue-700"
-            >
+            <Button type="submit" variant="primary">
               등록
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
               onClick={() => {
                 setShowForm(false);
                 setForm(emptyForm);
               }}
-              className="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg text-sm hover:bg-slate-300"
             >
               취소
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -280,9 +246,7 @@ export default function TripsPage() {
       {/* Trip List */}
       <div className="space-y-3">
         {trips.length === 0 && (
-          <div className="text-center text-slate-400 py-12">
-            등록된 여행이 없습니다
-          </div>
+          <EmptyState message="등록된 여행이 없습니다" />
         )}
         {trips.map((trip) => {
           const budgetPct =
@@ -358,18 +322,20 @@ export default function TripsPage() {
                       </h3>
                       {renderFormFields(editForm, setEditForm)}
                       <div className="mt-3 flex gap-2">
-                        <button
+                        <Button
+                          variant="warning"
+                          size="sm"
                           onClick={() => handleUpdate(trip.id)}
-                          className="bg-amber-600 text-white px-4 py-1.5 rounded text-sm hover:bg-amber-700"
                         >
                           저장
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => setEditingId(null)}
-                          className="bg-slate-200 text-slate-700 px-4 py-1.5 rounded text-sm"
                         >
                           취소
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -408,18 +374,20 @@ export default function TripsPage() {
                       />
 
                       <div className="flex gap-2">
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => startEdit(trip)}
-                          className="bg-slate-200 text-slate-700 px-3 py-1.5 rounded text-sm hover:bg-slate-300"
                         >
                           수정
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
                           onClick={() => handleDelete(trip.id)}
-                          className="bg-red-100 text-red-700 px-3 py-1.5 rounded text-sm hover:bg-red-200"
                         >
                           삭제
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -431,88 +399,18 @@ export default function TripsPage() {
       </div>
 
       {/* Detail Modal */}
-      {modalData && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"
-          onClick={() => setModalData(null)}
-        >
-          <div
-            className="bg-white rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-slate-800">
-                  {modalData.tripName} &gt; {modalData.category}
-                </h3>
-                <p className="text-sm text-slate-500">
-                  {modalData.transactions.length}건 ·{" "}
-                  {modalData.transactions
-                    .reduce((s, t) => s + t.amount, 0)
-                    .toLocaleString()}
-                  원
-                </p>
-              </div>
-              <button
-                onClick={() => setModalData(null)}
-                className="text-slate-400 hover:text-slate-600 text-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
-                aria-label="닫기"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="overflow-y-auto flex-1">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 sticky top-0">
-                  <tr>
-                    <th className="px-4 py-2 text-left font-medium text-slate-600">
-                      날짜
-                    </th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-600">
-                      결제수단
-                    </th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-600">
-                      가맹점
-                    </th>
-                    <th className="px-4 py-2 text-right font-medium text-slate-600">
-                      금액
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {modalData.transactions.map((tx) => (
-                    <tr
-                      key={tx.id}
-                      className="border-b border-slate-100 hover:bg-slate-50"
-                    >
-                      <td className="px-4 py-2 text-slate-600">
-                        <div>{tx.date}</div>
-                        {tx.originalDate && tx.originalDate !== tx.date && (
-                          <div className="text-xs text-slate-400">
-                            원거래일 {tx.originalDate}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 text-slate-600">
-                        {tx.cardCompany}
-                      </td>
-                      <td className="px-4 py-2 text-slate-800">
-                        {tx.merchant}
-                      </td>
-                      <td className="px-4 py-2 text-right font-medium">
-                        {tx.amount.toLocaleString()}원
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-between text-sm">
+      <Modal
+        open={modalData !== null}
+        onClose={() => setModalData(null)}
+        title={modalData ? `${modalData.tripName} > ${modalData.category}` : ""}
+        subtitle={
+          modalData
+            ? `${modalData.transactions.length}건 · ${modalData.transactions.reduce((s, t) => s + t.amount, 0).toLocaleString()}원`
+            : undefined
+        }
+        footer={
+          modalData ? (
+            <div className="flex justify-between text-sm">
               <span className="text-slate-600">
                 합계: {modalData.transactions.length}건
               </span>
@@ -523,9 +421,56 @@ export default function TripsPage() {
                 원
               </span>
             </div>
-          </div>
-        </div>
-      )}
+          ) : undefined
+        }
+      >
+        {modalData && (
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 sticky top-0">
+              <tr>
+                <th className="px-4 py-2 text-left font-medium text-slate-600">
+                  날짜
+                </th>
+                <th className="px-4 py-2 text-left font-medium text-slate-600">
+                  결제수단
+                </th>
+                <th className="px-4 py-2 text-left font-medium text-slate-600">
+                  가맹점
+                </th>
+                <th className="px-4 py-2 text-right font-medium text-slate-600">
+                  금액
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {modalData.transactions.map((tx) => (
+                <tr
+                  key={tx.id}
+                  className="border-b border-slate-100 hover:bg-slate-50"
+                >
+                  <td className="px-4 py-2 text-slate-600">
+                    <div>{tx.date}</div>
+                    {tx.originalDate && tx.originalDate !== tx.date && (
+                      <div className="text-xs text-slate-400">
+                        원거래일 {tx.originalDate}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 text-slate-600">
+                    {tx.cardCompany}
+                  </td>
+                  <td className="px-4 py-2 text-slate-800">
+                    {tx.merchant}
+                  </td>
+                  <td className="px-4 py-2 text-right font-medium">
+                    {tx.amount.toLocaleString()}원
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Modal>
     </div>
   );
 }

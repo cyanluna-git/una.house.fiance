@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { FamilyMemberDetail } from "@/types";
+import { Button, Badge, FormField, ErrorBanner, EmptyState, RELATION_COLORS } from "@/components";
 
 const RELATIONS = ["본인", "배우자", "자녀1", "자녀2", "자녀3", "부모", "기타"];
 
@@ -56,35 +57,20 @@ export default function FamilyPage() {
     fetchMembers();
   }
 
-  const relationBadge = (rel: string) => {
-    const colors: Record<string, string> = {
-      본인: "bg-blue-100 text-blue-700",
-      배우자: "bg-pink-100 text-pink-700",
-      자녀1: "bg-emerald-100 text-emerald-700",
-      자녀2: "bg-amber-100 text-amber-700",
-      자녀3: "bg-purple-100 text-purple-700",
-      부모: "bg-slate-100 text-slate-700",
-    };
-    return colors[rel] || "bg-gray-100 text-gray-700";
-  };
-
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold text-slate-800 mb-6">가족 구성원</h1>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" aria-live="assertive">
-          {error}
-        </div>
-      )}
+      <ErrorBanner message={error} />
 
       {/* Add Button */}
-      <button
+      <Button
+        variant="primary"
         onClick={() => setShowForm(!showForm)}
-        className="mb-4 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition"
+        className="mb-4"
       >
         {showForm ? "접기" : "+ 구성원 등록"}
-      </button>
+      </Button>
 
       {/* Form */}
       {showForm && (
@@ -96,10 +82,7 @@ export default function FamilyPage() {
             새 구성원 등록
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                이름 *
-              </label>
+            <FormField label="이름" required>
               <input
                 type="text"
                 value={form.name}
@@ -107,11 +90,8 @@ export default function FamilyPage() {
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                 required
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                관계 *
-              </label>
+            </FormField>
+            <FormField label="관계" required>
               <select
                 value={form.relation}
                 onChange={(e) => setForm(prev => ({ ...prev, relation: e.target.value }))}
@@ -123,11 +103,8 @@ export default function FamilyPage() {
                   </option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                출생연도
-              </label>
+            </FormField>
+            <FormField label="출생연도">
               <input
                 type="number"
                 value={form.birthYear}
@@ -137,36 +114,30 @@ export default function FamilyPage() {
                 placeholder="예: 1990"
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                메모
-              </label>
+            </FormField>
+            <FormField label="메모">
               <input
                 type="text"
                 value={form.note}
                 onChange={(e) => setForm(prev => ({ ...prev, note: e.target.value }))}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
               />
-            </div>
+            </FormField>
           </div>
           <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-blue-700"
-            >
+            <Button type="submit" variant="primary">
               등록
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
               onClick={() => {
                 setShowForm(false);
                 setForm(emptyForm);
               }}
-              className="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg text-sm hover:bg-slate-300"
             >
               취소
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -174,9 +145,7 @@ export default function FamilyPage() {
       {/* Member List */}
       <div className="space-y-3">
         {members.length === 0 && (
-          <div className="text-center text-slate-400 py-12">
-            등록된 구성원이 없습니다
-          </div>
+          <EmptyState message="등록된 구성원이 없습니다" />
         )}
         {members.map((m) => (
           <div
@@ -184,13 +153,7 @@ export default function FamilyPage() {
             className="bg-white rounded-xl shadow border border-slate-200 px-5 py-4 flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${relationBadge(
-                  m.relation
-                )}`}
-              >
-                {m.relation}
-              </span>
+              <Badge label={m.relation} colorMap={RELATION_COLORS} />
               <div>
                 <div className="font-semibold text-slate-800">{m.name}</div>
                 <div className="text-xs text-slate-500">
@@ -199,12 +162,13 @@ export default function FamilyPage() {
                 </div>
               </div>
             </div>
-            <button
+            <Button
+              variant="danger"
+              size="sm"
               onClick={() => handleDelete(m.id)}
-              className="bg-red-100 text-red-700 px-3 py-1.5 rounded text-sm hover:bg-red-200"
             >
               삭제
-            </button>
+            </Button>
           </div>
         ))}
       </div>

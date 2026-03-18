@@ -7,6 +7,7 @@ import {
   getL3Categories,
 } from "@/lib/categories";
 import type { CategoryRule } from "@/types";
+import { Button, FormField, ErrorBanner, LoadingSkeleton, EmptyState } from "@/components";
 
 interface TestResult {
   matched: boolean;
@@ -217,11 +218,7 @@ export default function CategoryRulesPage() {
           </span>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" aria-live="assertive">
-            {error}
-          </div>
-        )}
+        <ErrorBanner message={error} />
 
         {/* Match Test */}
         <div className="bg-white rounded-lg shadow p-4 mb-4">
@@ -237,13 +234,14 @@ export default function CategoryRulesPage() {
               onKeyDown={(e) => e.key === "Enter" && handleTest()}
               className="flex-1 px-3 py-2 border border-slate-300 rounded text-sm"
             />
-            <button
+            <Button
+              variant="primary"
               onClick={handleTest}
               disabled={testing || !testMerchant.trim()}
-              className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
+              loading={testing}
             >
               테스트
-            </button>
+            </Button>
           </div>
           {testResult && (
             <div className="mt-3 p-3 bg-slate-50 rounded text-sm">
@@ -281,10 +279,7 @@ export default function CategoryRulesPage() {
         {/* Filters + Add Button */}
         <div className="bg-white rounded-lg shadow p-4 mb-4">
           <div className="flex gap-4 items-end">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                키워드 검색
-              </label>
+            <FormField label="키워드 검색" className="flex-1">
               <input
                 type="text"
                 placeholder="키워드로 검색..."
@@ -292,11 +287,8 @@ export default function CategoryRulesPage() {
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                대분류 필터
-              </label>
+            </FormField>
+            <FormField label="대분류 필터">
               <select
                 value={filterL1}
                 onChange={(e) => setFilterL1(e.target.value)}
@@ -309,13 +301,13 @@ export default function CategoryRulesPage() {
                   </option>
                 ))}
               </select>
-            </div>
-            <button
+            </FormField>
+            <Button
+              variant="primary"
               onClick={() => setAdding(!adding)}
-              className="px-4 py-2 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700"
             >
               {adding ? "취소" : "+ 규칙 추가"}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -326,10 +318,7 @@ export default function CategoryRulesPage() {
               새 규칙 추가
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  키워드
-                </label>
+              <FormField label="키워드">
                 <input
                   type="text"
                   placeholder="가맹점 키워드"
@@ -339,22 +328,16 @@ export default function CategoryRulesPage() {
                   }
                   className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm"
                 />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  카테고리
-                </label>
+              </FormField>
+              <FormField label="카테고리" className="md:col-span-2">
                 {renderCategorySelectors(
                   newRule,
                   (updates) =>
                     setNewRule(prev => ({ ...prev, ...updates } as typeof newRule)),
                   "text-sm"
                 )}
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  우선순위
-                </label>
+              </FormField>
+              <FormField label="우선순위">
                 <input
                   type="number"
                   value={newRule.priority}
@@ -365,14 +348,14 @@ export default function CategoryRulesPage() {
                   min={0}
                   max={20}
                 />
-              </div>
-              <button
+              </FormField>
+              <Button
+                variant="primary"
                 onClick={handleAdd}
                 disabled={!newRule.keyword.trim()}
-                className="px-4 py-1.5 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700 disabled:opacity-50"
               >
                 추가
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -380,11 +363,9 @@ export default function CategoryRulesPage() {
         {/* Rules Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {loading ? (
-            <div className="p-8 text-center text-slate-600">로딩 중...</div>
+            <LoadingSkeleton variant="table" rows={5} />
           ) : rules.length === 0 ? (
-            <div className="p-8 text-center text-slate-600">
-              규칙이 없습니다
-            </div>
+            <EmptyState message="규칙이 없습니다" />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -492,33 +473,41 @@ export default function CategoryRulesPage() {
                       <td className="px-4 py-2 text-center">
                         {editingId === rule.id ? (
                           <>
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={handleSave}
                               className="text-green-600 hover:text-green-700 mr-2 text-xs"
                             >
                               저장
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => setEditingId(null)}
                               className="text-slate-500 hover:text-slate-700 text-xs"
                             >
                               취소
-                            </button>
+                            </Button>
                           </>
                         ) : (
                           <>
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleEdit(rule)}
                               className="text-blue-600 hover:text-blue-700 mr-2 text-xs"
                             >
                               편집
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleDelete(rule.id)}
                               className="text-red-500 hover:text-red-700 text-xs"
                             >
                               삭제
-                            </button>
+                            </Button>
                           </>
                         )}
                       </td>

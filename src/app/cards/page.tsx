@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import type { Card, FamilyMember } from "@/types";
+import { Button, Badge, FormField, ErrorBanner, EmptyState, CARD_COMPANY_COLORS } from "@/components";
 
 const CARD_COMPANIES = [
   "국민카드", "현대카드", "신한카드", "롯데카드",
@@ -77,21 +78,6 @@ function YearMonthPicker({
   );
 }
 
-const companyBadge = (company: string) => {
-  const colors: Record<string, string> = {
-    국민카드: "bg-amber-100 text-amber-700",
-    현대카드: "bg-slate-200 text-slate-700",
-    신한카드: "bg-blue-100 text-blue-700",
-    롯데카드: "bg-red-100 text-red-700",
-    농협카드: "bg-green-100 text-green-700",
-    하나카드: "bg-teal-100 text-teal-700",
-    우리카드: "bg-indigo-100 text-indigo-700",
-    지역화폐: "bg-orange-100 text-orange-700",
-  };
-  return colors[company] || "bg-gray-100 text-gray-700";
-};
-
-// Format number with commas for display, strip non-digits on change
 function formatCurrency(value: string): string {
   const num = value.replace(/[^\d]/g, "");
   if (!num) return "";
@@ -147,7 +133,6 @@ export default function CardsPage() {
   const totalAnnualFee = activeCards.reduce((s, c) => s + (c.annualFee || 0), 0);
   const totalMonthlyUsage = activeCards.reduce((s, c) => s + c.monthlyUsage, 0);
 
-  // Format usage month label (e.g., "2026-01" → "1월")
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const isCurrentMonth = usageMonth === currentMonth;
@@ -280,10 +265,7 @@ export default function CardsPage() {
   ) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            카드사 *
-          </label>
+        <FormField label="카드사" required>
           <select
             value={data.cardCompany}
             onChange={(e) => setData(prev => ({ ...prev, cardCompany: e.target.value }))}
@@ -295,11 +277,8 @@ export default function CardsPage() {
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            카드명 *
-          </label>
+        </FormField>
+        <FormField label="카드명" required>
           <input
             type="text"
             value={data.cardName}
@@ -308,11 +287,8 @@ export default function CardsPage() {
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
             required
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            카드번호 (끝 4자리)
-          </label>
+        </FormField>
+        <FormField label="카드번호 (끝 4자리)">
           <input
             type="text"
             value={data.cardNumber}
@@ -321,12 +297,9 @@ export default function CardsPage() {
             maxLength={4}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            카드 유형
-          </label>
+        <FormField label="카드 유형">
           <select
             value={data.cardType}
             onChange={(e) => setData(prev => ({ ...prev, cardType: e.target.value }))}
@@ -338,11 +311,8 @@ export default function CardsPage() {
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            연회비 (원)
-          </label>
+        </FormField>
+        <FormField label="연회비 (원)">
           <input
             type="text"
             inputMode="numeric"
@@ -351,11 +321,8 @@ export default function CardsPage() {
             placeholder="0"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            월 실적 기준 (원)
-          </label>
+        </FormField>
+        <FormField label="월 실적 기준 (원)">
           <input
             type="text"
             inputMode="numeric"
@@ -364,12 +331,9 @@ export default function CardsPage() {
             placeholder="300,000"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            월 할인한도 (원)
-          </label>
+        <FormField label="월 할인한도 (원)">
           <input
             type="text"
             inputMode="numeric"
@@ -380,31 +344,22 @@ export default function CardsPage() {
             placeholder="50,000"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            발급일
-          </label>
+        </FormField>
+        <FormField label="발급일">
           <YearMonthPicker
             value={data.issueDate}
             onChange={(val) => setData(prev => ({ ...prev, issueDate: val }))}
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            만료일
-          </label>
+        </FormField>
+        <FormField label="만료일">
           <YearMonthPicker
             value={data.expiryDate}
             onChange={(val) => setData(prev => ({ ...prev, expiryDate: val }))}
           />
-        </div>
+        </FormField>
 
         {familyMembers.length > 0 && (
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              소유자
-            </label>
+          <FormField label="소유자">
             <select
               value={data.familyMemberId}
               onChange={(e) =>
@@ -419,12 +374,9 @@ export default function CardsPage() {
                 </option>
               ))}
             </select>
-          </div>
+          </FormField>
         )}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            주요 혜택
-          </label>
+        <FormField label="주요 혜택" className="md:col-span-2">
           <textarea
             value={data.mainBenefits}
             onChange={(e) =>
@@ -434,19 +386,16 @@ export default function CardsPage() {
             placeholder="예: 주유 5%, 통신 10%, 편의점 5%"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
-        </div>
+        </FormField>
 
-        <div className="md:col-span-3">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            메모
-          </label>
+        <FormField label="메모" className="md:col-span-3">
           <textarea
             value={data.note}
             onChange={(e) => setData(prev => ({ ...prev, note: e.target.value }))}
             rows={2}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
           />
-        </div>
+        </FormField>
       </div>
     );
   }
@@ -472,11 +421,7 @@ export default function CardsPage() {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${companyBadge(card.cardCompany)}`}
-              >
-                {card.cardCompany}
-              </span>
+              <Badge label={card.cardCompany} colorMap={CARD_COMPANY_COLORS} />
               <div>
                 <div className="font-semibold text-slate-800">
                   {card.cardName}
@@ -523,18 +468,20 @@ export default function CardsPage() {
                 </h3>
                 {renderFormFields(editForm, setEditForm)}
                 <div className="mt-3 flex gap-2">
-                  <button
+                  <Button
+                    variant="warning"
+                    size="sm"
                     onClick={() => handleUpdate(card.id)}
-                    className="bg-amber-600 text-white px-4 py-1.5 rounded text-sm hover:bg-amber-700"
                   >
                     저장
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => setEditingId(null)}
-                    className="bg-slate-200 text-slate-700 px-4 py-1.5 rounded text-sm"
                   >
                     취소
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -591,26 +538,30 @@ export default function CardsPage() {
                   </div>
                 )}
                 <div className="flex gap-2">
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => startEdit(card)}
-                    className="bg-slate-200 text-slate-700 px-3 py-1.5 rounded text-sm hover:bg-slate-300"
                   >
                     수정
-                  </button>
+                  </Button>
                   {card.isActive && (
-                    <button
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      className="bg-amber-100 text-amber-700 hover:bg-amber-200"
                       onClick={() => handleDeactivate(card)}
-                      className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded text-sm hover:bg-amber-200"
                     >
                       비활성화
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
+                    variant="danger"
+                    size="sm"
                     onClick={() => handleDelete(card.id)}
-                    className="bg-red-100 text-red-700 px-3 py-1.5 rounded text-sm hover:bg-red-200"
                   >
                     삭제
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -624,11 +575,7 @@ export default function CardsPage() {
     <div className="p-6 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold text-slate-800 mb-6">카드 관리</h1>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" aria-live="assertive">
-          {error}
-        </div>
-      )}
+      <ErrorBanner message={error} />
 
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -653,12 +600,13 @@ export default function CardsPage() {
       </div>
 
       {/* Add Button */}
-      <button
+      <Button
+        variant="primary"
         onClick={() => setShowForm(!showForm)}
-        className="mb-4 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition"
+        className="mb-4"
       >
         {showForm ? "접기" : "+ 카드 등록"}
-      </button>
+      </Button>
 
       {/* Form */}
       {showForm && (
@@ -671,22 +619,19 @@ export default function CardsPage() {
           </h2>
           {renderFormFields(form, setForm)}
           <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-blue-700"
-            >
+            <Button type="submit" variant="primary">
               등록
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
               onClick={() => {
                 setShowForm(false);
                 setForm(emptyForm);
               }}
-              className="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg text-sm hover:bg-slate-300"
             >
               취소
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -694,9 +639,7 @@ export default function CardsPage() {
       {/* Active Cards List */}
       <div className="space-y-3 mb-8">
         {activeCards.length === 0 && !showForm && (
-          <div className="text-center text-slate-400 py-8">
-            등록된 카드가 없습니다
-          </div>
+          <EmptyState message="등록된 카드가 없습니다" />
         )}
         {activeCards.map((c) => renderCardItem(c, false))}
       </div>
