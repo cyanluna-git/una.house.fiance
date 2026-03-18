@@ -203,9 +203,9 @@ for (const col of fixedExpenseNewColumns) {
 
 // Migration: if old 'category' column exists, migrate to 3-level
 try {
-  const tableInfo = sqlite.prepare("PRAGMA table_info(transactions)").all() as any[];
-  const hasOldCategory = tableInfo.some((col: any) => col.name === "category");
-  const hasNewCategory = tableInfo.some((col: any) => col.name === "category_l1");
+  const tableInfo = sqlite.prepare("PRAGMA table_info(transactions)").all() as Array<{ name: string; type: string }>;
+  const hasOldCategory = tableInfo.some((col) => col.name === "category");
+  const hasNewCategory = tableInfo.some((col) => col.name === "category_l1");
 
   if (hasOldCategory && !hasNewCategory) {
     sqlite.exec(`ALTER TABLE transactions ADD COLUMN category_l1 TEXT DEFAULT '기타'`);
@@ -335,7 +335,7 @@ if (ruleCount.cnt === 0) {
   const insertRule = sqlite.prepare(
     "INSERT INTO category_rules (keyword, category_l1, category_l2, category_l3, priority) VALUES (?, ?, ?, ?, ?)"
   );
-  const seedMany = sqlite.transaction((rules: any[]) => {
+  const seedMany = sqlite.transaction((rules: Array<{ keyword: string; categoryL1: string; categoryL2?: string; categoryL3?: string; priority?: number }>) => {
     for (const r of rules) {
       insertRule.run(r.keyword, r.categoryL1, r.categoryL2 || "", r.categoryL3 || "", r.priority || 0);
     }

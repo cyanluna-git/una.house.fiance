@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import type { ImportResult } from "@/types";
 
 export default function ImportPage() {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
 

@@ -2,30 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { calcMonthlyAmount } from "@/lib/fixed-expense-calc";
-
-interface FixedExpense {
-  id: number;
-  name: string;
-  category: string;
-  amount: number;
-  frequency: string | null;
-  weekdays: string | null;
-  annualDate: string | null;
-  paymentDay: number | null;
-  paymentMethod: string | null;
-  recipient: string | null;
-  familyMemberId: number | null;
-  startDate: string;
-  endDate: string | null;
-  isActive: boolean;
-  note: string | null;
-}
-
-interface FamilyMember {
-  id: number;
-  name: string;
-  relation: string;
-}
+import type { FixedExpense, FamilyMember } from "@/types";
 
 const CATEGORIES = ["적금", "용돈", "회비", "보험", "공과금", "교육", "기부", "기타"];
 const PAYMENT_METHODS = ["자동이체", "계좌이체", "카드", "현금"];

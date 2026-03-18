@@ -1,30 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-
-interface Card {
-  id: number;
-  cardCompany: string;
-  cardName: string;
-  cardNumber: string | null;
-  cardType: string | null;
-  isActive: boolean;
-  annualFee: number;
-  issueDate: string | null;
-  expiryDate: string | null;
-  monthlyTarget: number | null;
-  monthlyDiscountLimit: number | null;
-  mainBenefits: string | null;
-  familyMemberId: number | null;
-  note: string | null;
-  monthlyUsage: number;
-}
-
-interface FamilyMember {
-  id: number;
-  name: string;
-  relation: string;
-}
+import type { Card, FamilyMember } from "@/types";
 
 const CARD_COMPANIES = [
   "국민카드", "현대카드", "신한카드", "롯데카드",

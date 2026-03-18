@@ -1,21 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-
-interface FamilyMember {
-  id: number;
-  name: string;
-  relation: string;
-  birthYear: number | null;
-  note: string | null;
-}
+import type { FamilyMemberDetail } from "@/types";
 
 const RELATIONS = ["본인", "배우자", "자녀1", "자녀2", "자녀3", "부모", "기타"];
 
 const emptyForm = { name: "", relation: "본인", birthYear: "", note: "" };
 
 export default function FamilyPage() {
-  const [members, setMembers] = useState<FamilyMember[]>([]);
+  const [members, setMembers] = useState<FamilyMemberDetail[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
 

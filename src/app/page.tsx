@@ -4,6 +4,7 @@ import { Fragment, useEffect, useCallback, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { calcMonthlyAmount } from "@/lib/fixed-expense-calc";
+import type { Transaction, FamilyMember, FixedExpense } from "@/types";
 
 const DashboardCharts = dynamic(() => import("@/components/DashboardCharts"), {
   ssr: false,
@@ -11,25 +12,6 @@ const DashboardCharts = dynamic(() => import("@/components/DashboardCharts"), {
     <div className="text-center py-12 text-slate-400">차트 로딩 중...</div>
   ),
 });
-
-interface Transaction {
-  id: number;
-  date: string;
-  originalDate: string | null;
-  billingMonth: string | null;
-  paymentMonthCandidate: string | null;
-  aggregationDate: string | null;
-  aggregationMonth: string | null;
-  aggregationBasis: string | null;
-  cardCompany: string;
-  merchant: string;
-  amount: number;
-  categoryL1: string;
-  categoryL2: string;
-  necessity: string | null;
-  isCompanyExpense: boolean;
-  familyMemberId: number | null;
-}
 
 interface NecessityItem { name: string; value: number; color: string }
 interface FamilySpendItem { name: string; value: number }
@@ -47,22 +29,6 @@ interface SalaryStatement {
   gross_pay: number;
   net_pay: number;
   total_deductions: number;
-}
-
-interface FixedExpense {
-  id: number;
-  amount: number;
-  frequency: string | null;
-  weekdays: string | null;
-  annualDate: string | null;
-  startDate: string;
-  isActive: boolean;
-}
-
-interface FamilyMember {
-  id: number;
-  name: string;
-  relation: string;
 }
 
 const NECESSITY_COLORS: Record<string, { label: string; color: string }> = {

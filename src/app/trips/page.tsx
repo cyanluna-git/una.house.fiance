@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
+import type { Trip, TripTransaction } from "@/types";
 
 const TripCategoryChart = dynamic(
   () => import("@/components/TripCategoryChart"),
@@ -12,36 +13,6 @@ const TripCategoryChart = dynamic(
     ),
   }
 );
-
-interface TripTransaction {
-  id: number;
-  date: string;
-  originalDate: string | null;
-  merchant: string;
-  amount: number;
-  categoryL2: string | null;
-  cardCompany: string;
-}
-
-interface CategoryBreakdown {
-  category: string | null;
-  total: number;
-  count: number;
-}
-
-interface Trip {
-  id: number;
-  name: string;
-  destination: string | null;
-  startDate: string | null;
-  endDate: string | null;
-  budget: number | null;
-  note: string | null;
-  totalExpense: number;
-  transactionCount: number;
-  categoryBreakdown: CategoryBreakdown[];
-  transactions: TripTransaction[];
-}
 
 const emptyForm = {
   name: "",

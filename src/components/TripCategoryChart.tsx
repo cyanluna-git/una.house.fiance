@@ -3,12 +3,7 @@
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
-
-interface CategoryBreakdown {
-  category: string | null;
-  total: number;
-  count: number;
-}
+import type { CategoryBreakdown } from "@/types";
 
 const TRIP_COLORS = [
   "#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6",
@@ -64,7 +59,7 @@ export default function TripCategoryChart({
             dataKey="amount"
             radius={[0, 6, 6, 0]}
             cursor="pointer"
-            onClick={(_data: any, index: number) => {
+            onClick={(_data: unknown, index: number) => {
               onCategoryClick(chartData[index].name);
             }}
             label={{

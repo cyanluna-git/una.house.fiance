@@ -6,15 +6,7 @@ import {
   getL2Categories,
   getL3Categories,
 } from "@/lib/categories";
-
-interface CategoryRule {
-  id: number;
-  keyword: string;
-  categoryL1: string;
-  categoryL2: string;
-  categoryL3: string;
-  priority: number;
-}
+import type { CategoryRule } from "@/types";
 
 interface TestResult {
   matched: boolean;

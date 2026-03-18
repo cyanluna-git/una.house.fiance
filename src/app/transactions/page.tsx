@@ -2,48 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getL1Categories, getL2Categories, getL3Categories } from "@/lib/categories";
-
-interface Transaction {
-  id: number;
-  date: string;
-  originalDate: string | null;
-  billingMonth: string | null;
-  paymentMonthCandidate: string | null;
-  aggregationDate: string | null;
-  aggregationMonth: string | null;
-  aggregationBasis: string | null;
-  cardCompany: string;
-  cardName: string | null;
-  cardId: number | null;
-  merchant: string;
-  amount: number;
-  categoryL1: string;
-  categoryL2: string;
-  categoryL3: string;
-  necessity: string | null;
-  familyMemberId: number | null;
-  tripId: number | null;
-  isCompanyExpense: boolean;
-  note: string | null;
-}
-
-interface CardInfo {
-  id: number;
-  cardCompany: string;
-  cardName: string;
-  isActive: boolean;
-}
-
-interface FamilyMember {
-  id: number;
-  name: string;
-  relation: string;
-}
-
-interface Trip {
-  id: number;
-  name: string;
-}
+import type { Transaction, CardInfo, FamilyMember, TripRef } from "@/types";
 
 const NECESSITY_LABELS: Record<string, { label: string; color: string }> = {
   essential: { label: "필수", color: "bg-emerald-100 text-emerald-700" },
@@ -68,7 +27,7 @@ export default function TransactionsPage() {
   const [editData, setEditData] = useState<Partial<Transaction>>({});
   const [cardList, setCardList] = useState<CardInfo[]>([]);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  const [tripList, setTripList] = useState<Trip[]>([]);
+  const [tripList, setTripList] = useState<TripRef[]>([]);
 
   const limit = 50;
 
