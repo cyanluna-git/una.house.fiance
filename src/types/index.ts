@@ -205,6 +205,14 @@ export interface CategoryAnalyticsResponse {
     waste: number;
     unset: number;
   }>;
+  necessityByCategory: Array<{
+    categoryL1: string;
+    essential: number;
+    discretionary: number;
+    waste: number;
+    unset: number;
+    total: number;
+  }>;
   familyCategoryMatrix: Array<Record<string, string | number> & { memberName: string }>;
   summary: {
     totalAmount: number;

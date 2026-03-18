@@ -1,4 +1,4 @@
-const CACHE_NAME = "unahouse-finance-v3";
+const CACHE_NAME = "unahouse-finance-v4";
 const APP_SHELL = [
   "/",
   "/?source=pwa",
@@ -24,7 +24,7 @@ self.addEventListener("activate", (event) => {
       caches.keys().then((keys) =>
         Promise.all(
         keys
-          .filter((key) => key.startsWith("unahouse-finance-") && key !== CACHE_NAME)
+          .filter((key) => key.startsWith("unahouse-") && key !== CACHE_NAME)
           .map((key) => caches.delete(key))
         )
       ),

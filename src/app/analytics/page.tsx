@@ -6,6 +6,10 @@ import MultiSelect from "@/components/MultiSelect";
 import CategoryTrendChart from "@/components/CategoryTrendChart";
 import L2DrilldownPanel from "@/components/L2DrilldownPanel";
 import AnalyticsSummaryCards from "@/components/AnalyticsSummaryCards";
+import NecessityTrendChart from "@/components/NecessityTrendChart";
+import NecessityByCategoryChart from "@/components/NecessityByCategoryChart";
+import NecessityInsightCards from "@/components/NecessityInsightCards";
+import TopWasteCategories from "@/components/TopWasteCategories";
 import type { CategoryAnalyticsResponse } from "@/types";
 
 type TabKey = "trend" | "necessity" | "family";
@@ -100,7 +104,7 @@ export default function AnalyticsPage() {
 
   const tabs: Array<{ key: TabKey; label: string; disabled: boolean; badge?: string }> = [
     { key: "trend", label: "트렌드", disabled: false },
-    { key: "necessity", label: "필수도 분석", disabled: true, badge: "Phase 3" },
+    { key: "necessity", label: "필수도 분석", disabled: false },
     { key: "family", label: "가족 교차", disabled: true, badge: "Phase 3" },
   ];
 
@@ -203,6 +207,43 @@ export default function AnalyticsPage() {
                     onClose={() => setExpandedL1(null)}
                   />
                 )}
+              </div>
+            )}
+          </>
+        )}
+
+        {!loading && !error && data && activeTab === "necessity" && (
+          <>
+            {data.necessityTrend.length === 0 ? (
+              <EmptyState message="선택한 기간에 데이터가 없습니다" />
+            ) : (
+              <div className="space-y-6">
+                {/* Insight summary cards */}
+                <NecessityInsightCards
+                  necessityTrend={data.necessityTrend}
+                  necessityByCategory={data.necessityByCategory}
+                />
+
+                {/* Monthly necessity stacked bar chart */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-1">월별 필수도 트렌드</h3>
+                  <p className="text-xs text-slate-500 mb-4">월별 필수/재량/낭비/미설정 비율 변화</p>
+                  <NecessityTrendChart data={data.necessityTrend} />
+                </div>
+
+                {/* Necessity by category horizontal stacked bar chart */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-1">카테고리별 필수도 분포</h3>
+                  <p className="text-xs text-slate-500 mb-4">L1 카테고리별 필수/재량/낭비/미설정 구성</p>
+                  <NecessityByCategoryChart data={data.necessityByCategory} />
+                </div>
+
+                {/* Top waste categories */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-1">낭비 상위 카테고리</h3>
+                  <p className="text-xs text-slate-500 mb-4">낭비 금액 기준 상위 5개 카테고리</p>
+                  <TopWasteCategories data={data.necessityByCategory} />
+                </div>
               </div>
             )}
           </>

@@ -148,7 +148,45 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       ...(necMap.get(m) ?? { essential: 0, discretionary: 0, waste: 0, unset: 0 }),
     }));
 
-    // ── 5. Family × Category matrix ─────────────────────────────────────
+    // ── 5. Necessity × Category L1 matrix ─────────────────────────────────
+    type NecByCatRow = { categoryL1: string; necessity: string; amount: number };
+    const necByCatRows = sqlite
+      .prepare(
+        `SELECT
+           COALESCE(category_l1, '기타') AS categoryL1,
+           COALESCE(necessity, 'unset') AS necessity,
+           SUM(ABS(amount)) AS amount
+         FROM transactions
+         ${baseWhere}
+         GROUP BY categoryL1, necessity
+         ORDER BY categoryL1`
+      )
+      .all(...baseParams) as NecByCatRow[];
+
+    const necByCatMap = new Map<
+      string,
+      { categoryL1: string; essential: number; discretionary: number; waste: number; unset: number; total: number }
+    >();
+    for (const r of necByCatRows) {
+      const entry = necByCatMap.get(r.categoryL1) ?? {
+        categoryL1: r.categoryL1,
+        essential: 0,
+        discretionary: 0,
+        waste: 0,
+        unset: 0,
+        total: 0,
+      };
+      if (r.necessity in entry && r.necessity !== "categoryL1" && r.necessity !== "total") {
+        entry[r.necessity as "essential" | "discretionary" | "waste" | "unset"] += r.amount;
+      }
+      entry.total += r.amount;
+      necByCatMap.set(r.categoryL1, entry);
+    }
+    const necessityByCategory = Array.from(necByCatMap.values()).sort(
+      (a, b) => b.total - a.total
+    );
+
+    // ── 6. Family × Category matrix ─────────────────────────────────────
     type FamilyCatRow = { familyMemberId: number | null; categoryL1: string; amount: number };
     const familyCatRows = sqlite
       .prepare(
@@ -187,7 +225,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       Record<string, string | number> & { memberName: string }
     >;
 
-    // ── 6. Summary ───────────────────────────────────────────────────────
+    // ── 7. Summary ───────────────────────────────────────────────────────
     type SummaryRow = { totalAmount: number };
     const summaryRow = sqlite
       .prepare(
@@ -236,6 +274,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       categoryTrend,
       l2Breakdown,
       necessityTrend,
+      necessityByCategory,
       familyCategoryMatrix,
       summary,
     };
