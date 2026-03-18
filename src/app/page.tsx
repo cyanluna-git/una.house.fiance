@@ -180,9 +180,15 @@ export default function Home() {
         startDate: fe.startDate,
       }, fixedCalcYear, fixedCalcMonth), 0);
 
-    // Income
+    // Income (net_pay = 실수령 기준)
     let incomeTotal = 0;
-    for (const s of sals) incomeTotal += s.gross_pay;
+    let grossTotal = 0;
+    let deductionTotal = 0;
+    for (const s of sals) {
+      incomeTotal += s.net_pay;
+      grossTotal += s.gross_pay;
+      deductionTotal += s.total_deductions;
+    }
 
     // Savings rate
     const monthsInView = selectedMonth === "all"
@@ -264,11 +270,11 @@ export default function Home() {
       .slice(-12)
       .map(([month, amount]) => ({ month, amount }));
 
-    // Income map (all)
+    // Income map (all, net_pay 기준)
     const allIncomeMap = new Map<string, number>();
     for (const s of allSalaries) {
       const mk = s.pay_date.substring(0, 7);
-      allIncomeMap.set(mk, (allIncomeMap.get(mk) || 0) + s.gross_pay);
+      allIncomeMap.set(mk, (allIncomeMap.get(mk) || 0) + s.net_pay);
     }
 
     // Income vs Expense
@@ -308,6 +314,8 @@ export default function Home() {
 
     return {
       totalIncome: incomeTotal,
+      grossIncome: grossTotal,
+      totalDeductions: deductionTotal,
       totalCardSpend: cardTotal,
       pureHouseholdSpend: pureTotal,
       companyExpenseTotal: companyTotal,
@@ -544,7 +552,7 @@ export default function Home() {
         {/* Summary Cards Row 1: Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg shadow p-5 text-white">
-            <p className="text-sm opacity-80">총 수입</p>
+            <p className="text-sm opacity-80">총 수입 (실수령)</p>
             <p className="text-2xl font-bold mt-1">{dash.totalIncome.toLocaleString()}원</p>
           </div>
 
@@ -563,7 +571,7 @@ export default function Home() {
             <p className="text-2xl font-bold mt-1">
               {dash.savingsRate !== null ? `${dash.savingsRate}%` : "-"}
             </p>
-            <p className="text-xs opacity-70 mt-1">(수입 - 지출) / 수입</p>
+            <p className="text-xs opacity-70 mt-1">(실수령 - 지출) / 실수령</p>
           </div>
 
           <div className={`bg-gradient-to-r rounded-lg shadow p-5 text-white ${
@@ -608,8 +616,9 @@ export default function Home() {
           </div>
 
           <div className="bg-white rounded-lg shadow p-5 border border-slate-200">
-            <p className="text-sm text-slate-500">거래 건수</p>
-            <p className="text-xl font-bold text-slate-900 mt-1">{dash.totalCount.toLocaleString()}건</p>
+            <p className="text-sm text-slate-500">세전 급여</p>
+            <p className="text-xl font-bold text-slate-900 mt-1">{dash.grossIncome.toLocaleString()}원</p>
+            <p className="text-xs text-slate-400 mt-1">공제 {dash.totalDeductions.toLocaleString()}원</p>
           </div>
         </div>
 
