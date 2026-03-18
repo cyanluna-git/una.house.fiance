@@ -213,11 +213,34 @@ export interface CategoryAnalyticsResponse {
     unset: number;
     total: number;
   }>;
-  familyCategoryMatrix: Array<Record<string, string | number> & { memberName: string }>;
+  familyCategoryMatrix: Array<Record<string, string | number> & { memberName: string; memberId: number }>;
   summary: {
     totalAmount: number;
     topL1: string;
     topL2: string;
     avgMonthly: number;
   };
+}
+
+/** API response shape for GET /api/categories/analytics/family-l2 */
+export interface FamilyL2BreakdownResponse {
+  memberId: number;
+  memberName: string;
+  categories: Array<{
+    categoryL1: string;
+    categoryL2: string;
+    amount: number;
+    count: number;
+  }>;
+}
+
+/** API response shape for GET /api/categories/analytics/category-member-trend */
+export interface CategoryMemberTrendResponse {
+  categoryL1: string;
+  months: string[];
+  members: Array<{
+    memberId: number;
+    memberName: string;
+    data: Array<{ month: string; amount: number }>;
+  }>;
 }

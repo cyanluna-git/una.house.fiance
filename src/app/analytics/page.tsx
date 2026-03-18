@@ -10,6 +10,7 @@ import NecessityTrendChart from "@/components/NecessityTrendChart";
 import NecessityByCategoryChart from "@/components/NecessityByCategoryChart";
 import NecessityInsightCards from "@/components/NecessityInsightCards";
 import TopWasteCategories from "@/components/TopWasteCategories";
+import FamilyCategoryTable from "@/components/FamilyCategoryTable";
 import type { CategoryAnalyticsResponse } from "@/types";
 
 type TabKey = "trend" | "necessity" | "family";
@@ -105,7 +106,7 @@ export default function AnalyticsPage() {
   const tabs: Array<{ key: TabKey; label: string; disabled: boolean; badge?: string }> = [
     { key: "trend", label: "트렌드", disabled: false },
     { key: "necessity", label: "필수도 분석", disabled: false },
-    { key: "family", label: "가족 교차", disabled: true, badge: "Phase 3" },
+    { key: "family", label: "가족 교차", disabled: false },
   ];
 
   return (
@@ -245,6 +246,20 @@ export default function AnalyticsPage() {
                   <TopWasteCategories data={data.necessityByCategory} />
                 </div>
               </div>
+            )}
+          </>
+        )}
+
+        {!loading && !error && data && activeTab === "family" && (
+          <>
+            {data.familyCategoryMatrix.length === 0 ? (
+              <EmptyState message="선택한 기간에 가족 지출 데이터가 없습니다" />
+            ) : (
+              <FamilyCategoryTable
+                data={data.familyCategoryMatrix}
+                from={from}
+                to={to}
+              />
             )}
           </>
         )}

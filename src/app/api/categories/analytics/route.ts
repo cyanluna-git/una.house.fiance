@@ -211,18 +211,20 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       familyNameMap.set(fm.id, `${fm.name} (${fm.relation})`);
     }
 
-    // Pivot: each row = { memberName, cat1: amount, cat2: amount, ... }
-    const familyMatrixMap = new Map<string, Record<string, string | number>>();
+    // Pivot: each row = { memberName, memberId, cat1: amount, cat2: amount, ... }
+    // memberId=0 represents 미지정 (NULL family_member_id)
+    const familyMatrixMap = new Map<number, Record<string, string | number>>();
     for (const r of familyCatRows) {
+      const memberId = r.familyMemberId ?? 0;
       const memberName = r.familyMemberId
         ? (familyNameMap.get(r.familyMemberId) ?? `구성원#${r.familyMemberId}`)
         : "미지정";
-      const entry = familyMatrixMap.get(memberName) ?? { memberName };
+      const entry = familyMatrixMap.get(memberId) ?? { memberName, memberId };
       entry[r.categoryL1] = ((entry[r.categoryL1] as number) ?? 0) + r.amount;
-      familyMatrixMap.set(memberName, entry);
+      familyMatrixMap.set(memberId, entry);
     }
     const familyCategoryMatrix = Array.from(familyMatrixMap.values()) as Array<
-      Record<string, string | number> & { memberName: string }
+      Record<string, string | number> & { memberName: string; memberId: number }
     >;
 
     // ── 7. Summary ───────────────────────────────────────────────────────
