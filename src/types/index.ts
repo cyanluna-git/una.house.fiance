@@ -152,3 +152,37 @@ export interface SeedRule {
   categoryL3?: string;
   priority?: number;
 }
+
+/** API response shape for GET /api/dashboard */
+export interface DashboardResponse {
+  availableMonths: string[];
+
+  // Snapshot metrics
+  incomeTotal: number;
+  grossIncome: number;
+  totalDeductions: number;
+  totalSpend: number;
+  pureHouseholdSpend: number;
+  companyExpenseTotal: number;
+  totalCount: number;
+  fixedExpenseMonthly: number;
+  savingsRate: number | null;
+
+  // Month-over-month change
+  momChange: { amount: number; percent: number | null } | null;
+
+  // Chart data
+  categoryBreakdown: { category: string; amount: number; count: number }[];
+  necessityBreakdown: { label: string; amount: number }[];
+  familyBreakdown: { name: string; amount: number }[];
+  incomeExpenseData: { month: string; income: number; expense: number }[];
+  trendData: { month: string; amount: number }[];
+
+  // Drill-down table
+  categoryTable: {
+    categoryL1: string;
+    amount: number;
+    count: number;
+    children: { categoryL2: string; amount: number; count: number }[];
+  }[];
+}

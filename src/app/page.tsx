@@ -1,10 +1,9 @@
 'use client';
 
-import { Fragment, useEffect, useCallback, useState, useMemo } from "react";
+import { Fragment, useEffect, useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { calcMonthlyAmount } from "@/lib/fixed-expense-calc";
-import type { Transaction, FamilyMember, FixedExpense } from "@/types";
+import type { Transaction, DashboardResponse } from "@/types";
 
 const DashboardCharts = dynamic(() => import("@/components/DashboardCharts"), {
   ssr: false,
@@ -13,293 +12,84 @@ const DashboardCharts = dynamic(() => import("@/components/DashboardCharts"), {
   ),
 });
 
-interface NecessityItem { name: string; value: number; color: string }
-interface FamilySpendItem { name: string; value: number }
-interface TrendItem { month: string; [category: string]: string | number }
-
-interface CategoryDetail {
-  l1: string;
-  l2Items: { name: string; amount: number; count: number }[];
-  total: number;
-  count: number;
-}
-
-interface SalaryStatement {
-  pay_date: string;
-  gross_pay: number;
-  net_pay: number;
-  total_deductions: number;
-}
-
-const NECESSITY_COLORS: Record<string, { label: string; color: string }> = {
-  essential: { label: "필수", color: "#10b981" },
-  discretionary: { label: "재량", color: "#f59e0b" },
-  waste: { label: "과소비", color: "#ef4444" },
-  unset: { label: "미분류", color: "#94a3b8" },
+const NECESSITY_COLORS: Record<string, string> = {
+  필수: "#10b981",
+  재량: "#f59e0b",
+  과소비: "#ef4444",
+  미분류: "#94a3b8",
 };
 
-const getAggregationMonth = (transaction: Transaction) =>
-  transaction.aggregationMonth ||
-  transaction.aggregationDate?.substring(0, 7) ||
-  transaction.originalDate?.substring(0, 7) ||
-  transaction.date.substring(0, 7);
-
 export default function Home() {
-  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-  const [allSalaries, setAllSalaries] = useState<SalaryStatement[]>([]);
-  const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [dashData, setDashData] = useState<DashboardResponse | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
   const [expandedL1, setExpandedL1] = useState<Set<string>>(new Set());
   const [modalCategory, setModalCategory] = useState<{ l1: string; l2?: string } | null>(null);
+  const [modalTransactions, setModalTransactions] = useState<Transaction[]>([]);
+  const [modalLoading, setModalLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showMoreCharts, setShowMoreCharts] = useState(false);
 
+  // Fetch dashboard aggregated data whenever selectedMonth changes
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDashboard = async () => {
+      setLoading(true);
       try {
-        const [txRes, incomeRes, fixedRes, familyRes] = await Promise.all([
-          fetch('/api/transactions?limit=5000'),
-          fetch('/api/income'),
-          fetch('/api/fixed-expenses'),
-          fetch('/api/family'),
-        ]);
-
-        const [txResult, incomeResult, fixedResult, familyResult] = await Promise.all([
-          txRes.json(), incomeRes.json(), fixedRes.json(), familyRes.json(),
-        ]);
-
-        setAllTransactions(txResult.data || []);
-        setAllSalaries(incomeResult.data || []);
-        setFixedExpenses(fixedResult.data || []);
-        setFamilyMembers(familyResult.data || []);
+        const url =
+          selectedMonth === "all"
+            ? "/api/dashboard"
+            : `/api/dashboard?month=${selectedMonth}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("dashboard fetch failed");
+        const data: DashboardResponse = await res.json();
+        setDashData(data);
       } catch {
         setError("오류가 발생했습니다. 다시 시도해 주세요.");
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+    fetchDashboard();
+  }, [selectedMonth]);
 
-  // Available months for dropdown (descending order)
-  const availableMonths = useMemo(() => {
-    const monthSet = new Set<string>();
-    for (const t of allTransactions) monthSet.add(getAggregationMonth(t));
-    for (const s of allSalaries) monthSet.add(s.pay_date.substring(0, 7));
-    return Array.from(monthSet).sort().reverse();
-  }, [allTransactions, allSalaries]);
-
-  // All dashboard computations
-  const dash = useMemo(() => {
-    // === Filtered data for snapshot metrics ===
-    const txs = selectedMonth === "all"
-      ? allTransactions
-      : allTransactions.filter(t => getAggregationMonth(t) === selectedMonth);
-    const sals = selectedMonth === "all"
-      ? allSalaries
-      : allSalaries.filter(s => s.pay_date.startsWith(selectedMonth));
-
-    // Snapshot aggregation
-    const categoryMap = new Map<string, number>();
-    const necessityMap = new Map<string, number>();
-    const familyMap = new Map<number | null, number>();
-    const categoryDetailMap = new Map<string, Map<string, { amount: number; count: number }>>();
-
-    let cardTotal = 0;
-    let pureTotal = 0;
-    let companyTotal = 0;
-
-    for (const t of txs) {
-      const abs = Math.abs(t.amount);
-      const cat = t.categoryL1 || "기타";
-      const cat2 = t.categoryL2 || "미분류";
-      const nec = t.necessity || "unset";
-
-      categoryMap.set(cat, (categoryMap.get(cat) || 0) + abs);
-      necessityMap.set(nec, (necessityMap.get(nec) || 0) + abs);
-      familyMap.set(t.familyMemberId, (familyMap.get(t.familyMemberId) || 0) + abs);
-
-      cardTotal += abs;
-      if (t.isCompanyExpense) {
-        companyTotal += abs;
-      } else {
-        pureTotal += abs;
+  // Lazy-fetch modal transactions when modal opens
+  useEffect(() => {
+    if (!modalCategory) {
+      setModalTransactions([]);
+      return;
+    }
+    const fetchModal = async () => {
+      setModalLoading(true);
+      try {
+        const params = new URLSearchParams({ limit: "200" });
+        params.set("categoryL1", modalCategory.l1);
+        if (modalCategory.l2) params.set("categoryL2", modalCategory.l2);
+        if (selectedMonth !== "all") {
+          // Use from/to to scope to the selected month
+          const from = `${selectedMonth}-01`;
+          const lastDay = new Date(
+            Number(selectedMonth.slice(0, 4)),
+            Number(selectedMonth.slice(5, 7)),
+            0
+          )
+            .getDate()
+            .toString()
+            .padStart(2, "0");
+          params.set("from", from);
+          params.set("to", `${selectedMonth}-${lastDay}`);
+        }
+        const res = await fetch(`/api/transactions?${params.toString()}`);
+        if (!res.ok) throw new Error("modal fetch failed");
+        const json = await res.json();
+        setModalTransactions(json.data ?? []);
+      } catch {
+        setModalTransactions([]);
+      } finally {
+        setModalLoading(false);
       }
-
-      if (!categoryDetailMap.has(cat)) categoryDetailMap.set(cat, new Map());
-      const l2Map = categoryDetailMap.get(cat)!;
-      const ex = l2Map.get(cat2) || { amount: 0, count: 0 };
-      l2Map.set(cat2, { amount: ex.amount + abs, count: ex.count + 1 });
-    }
-
-    // Fixed expenses - use calcMonthlyAmount for frequency-aware calculation
-    const fixedCalcYear = selectedMonth === "all" ? new Date().getFullYear() : Number(selectedMonth.slice(0, 4));
-    const fixedCalcMonth = selectedMonth === "all" ? new Date().getMonth() + 1 : Number(selectedMonth.slice(5, 7));
-    const fixedMonthly = fixedExpenses
-      .filter(fe => fe.isActive)
-      .reduce((sum, fe) => sum + calcMonthlyAmount({
-        amount: fe.amount,
-        frequency: fe.frequency,
-        weekdays: fe.weekdays,
-        annualDate: fe.annualDate,
-        startDate: fe.startDate,
-      }, fixedCalcYear, fixedCalcMonth), 0);
-
-    // Income (net_pay = 실수령 기준)
-    let incomeTotal = 0;
-    let grossTotal = 0;
-    let deductionTotal = 0;
-    for (const s of sals) {
-      incomeTotal += s.net_pay;
-      grossTotal += s.gross_pay;
-      deductionTotal += s.total_deductions;
-    }
-
-    // Savings rate
-    const monthsInView = selectedMonth === "all"
-      ? Math.max(new Set(allTransactions.map(t => getAggregationMonth(t))).size, 1)
-      : 1;
-    const totalSpendWithFixed = pureTotal + (fixedMonthly * monthsInView);
-    const savingsRate = incomeTotal > 0
-      ? Math.round(((incomeTotal - totalSpendWithFixed) / incomeTotal) * 100)
-      : null;
-
-    // MoM change - always compute from all data
-    let momChange: { amount: number; percent: number | null } | null = null;
-    const allMonthlyMap = new Map<string, number>();
-    for (const t of allTransactions) {
-      const mk = getAggregationMonth(t);
-      allMonthlyMap.set(mk, (allMonthlyMap.get(mk) || 0) + Math.abs(t.amount));
-    }
-    const sortedAllMonths = Array.from(allMonthlyMap.keys()).sort();
-
-    if (selectedMonth === "all") {
-      if (sortedAllMonths.length >= 2) {
-        const cur = sortedAllMonths[sortedAllMonths.length - 1];
-        const prev = sortedAllMonths[sortedAllMonths.length - 2];
-        const diff = (allMonthlyMap.get(cur) || 0) - (allMonthlyMap.get(prev) || 0);
-        const prevAmt = allMonthlyMap.get(prev) || 0;
-        momChange = { amount: diff, percent: prevAmt > 0 ? Math.round((diff / prevAmt) * 100) : null };
-      }
-    } else {
-      const idx = sortedAllMonths.indexOf(selectedMonth);
-      if (idx > 0) {
-        const prev = sortedAllMonths[idx - 1];
-        const curAmt = allMonthlyMap.get(selectedMonth) || 0;
-        const prevAmt = allMonthlyMap.get(prev) || 0;
-        const diff = curAmt - prevAmt;
-        momChange = { amount: diff, percent: prevAmt > 0 ? Math.round((diff / prevAmt) * 100) : null };
-      }
-    }
-
-    // Category pie (top 8 + others)
-    const sortedCats = Array.from(categoryMap.entries()).sort((a, b) => b[1] - a[1]);
-    const topCats = sortedCats.slice(0, 8);
-    const otherSum = sortedCats.slice(8).reduce((s, [, v]) => s + v, 0);
-    const categoryData = topCats.map(([name, value]) => ({ name, value }));
-    if (otherSum > 0) categoryData.push({ name: "기타", value: otherSum });
-
-    // Necessity pie
-    const necessityData: NecessityItem[] = [];
-    for (const [key, value] of necessityMap.entries()) {
-      const info = NECESSITY_COLORS[key] || NECESSITY_COLORS.unset;
-      necessityData.push({ name: info.label, value, color: info.color });
-    }
-    necessityData.sort((a, b) => b.value - a.value);
-
-    // Family spend
-    const familyNameMap = new Map<number, string>();
-    for (const fm of familyMembers) familyNameMap.set(fm.id, `${fm.name} (${fm.relation})`);
-    const familySpendData: FamilySpendItem[] = [];
-    for (const [memberId, value] of familyMap.entries()) {
-      const name = memberId ? (familyNameMap.get(memberId) || `구성원#${memberId}`) : "미지정";
-      familySpendData.push({ name, value });
-    }
-    familySpendData.sort((a, b) => b.value - a.value);
-
-    // Category detail (L1 → L2 drill-down)
-    const categoryDetails: CategoryDetail[] = [];
-    for (const [l1, l2Map] of categoryDetailMap.entries()) {
-      const l2Items = Array.from(l2Map.entries())
-        .map(([name, { amount, count }]) => ({ name, amount, count }))
-        .sort((a, b) => b.amount - a.amount);
-      const total = l2Items.reduce((s, item) => s + item.amount, 0);
-      const count = l2Items.reduce((s, item) => s + item.count, 0);
-      categoryDetails.push({ l1, l2Items, total, count });
-    }
-    categoryDetails.sort((a, b) => b.total - a.total);
-
-    // === Time-series data (always from ALL data) ===
-    const monthlyData = Array.from(allMonthlyMap.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .slice(-12)
-      .map(([month, amount]) => ({ month, amount }));
-
-    // Income map (all, net_pay 기준)
-    const allIncomeMap = new Map<string, number>();
-    for (const s of allSalaries) {
-      const mk = s.pay_date.substring(0, 7);
-      allIncomeMap.set(mk, (allIncomeMap.get(mk) || 0) + s.net_pay);
-    }
-
-    // Income vs Expense
-    const allMonthKeysSet = new Set([...allMonthlyMap.keys(), ...allIncomeMap.keys()]);
-    const incomeExpenseData = Array.from(allMonthKeysSet)
-      .sort()
-      .slice(-12)
-      .map(month => ({
-        month,
-        income: allIncomeMap.get(month) || 0,
-        expense: allMonthlyMap.get(month) || 0,
-      }));
-
-    // Trend line chart (always all data, top 5 categories)
-    const trendMap = new Map<string, Map<string, number>>();
-    const allCatMap = new Map<string, number>();
-    for (const t of allTransactions) {
-      const mk = getAggregationMonth(t);
-      const cat = t.categoryL1 || "기타";
-      const abs = Math.abs(t.amount);
-      if (!trendMap.has(mk)) trendMap.set(mk, new Map());
-      const mc = trendMap.get(mk)!;
-      mc.set(cat, (mc.get(cat) || 0) + abs);
-      allCatMap.set(cat, (allCatMap.get(cat) || 0) + abs);
-    }
-    const trendCategories = Array.from(allCatMap.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([name]) => name);
-    const recentMonths = sortedAllMonths.slice(-12);
-    const trendData: TrendItem[] = recentMonths.map(month => {
-      const item: TrendItem = { month };
-      const mc = trendMap.get(month);
-      for (const cat of trendCategories) item[cat] = mc?.get(cat) || 0;
-      return item;
-    });
-
-    return {
-      totalIncome: incomeTotal,
-      grossIncome: grossTotal,
-      totalDeductions: deductionTotal,
-      totalCardSpend: cardTotal,
-      pureHouseholdSpend: pureTotal,
-      companyExpenseTotal: companyTotal,
-      fixedExpenseMonthly: fixedMonthly,
-      totalCount: txs.length,
-      savingsRate,
-      momChange,
-      monthlyData,
-      categoryData,
-      necessityData,
-      familySpendData,
-      trendData,
-      trendCategories,
-      incomeExpenseData,
-      categoryDetails,
     };
-  }, [allTransactions, allSalaries, fixedExpenses, familyMembers, selectedMonth]);
+    fetchModal();
+  }, [modalCategory, selectedMonth]);
 
   const formatAmount = (value: number) => {
     if (Math.abs(value) >= 10000) return `${(value / 10000).toFixed(0)}만`;
@@ -307,43 +97,63 @@ export default function Home() {
   };
 
   const toggleL1 = (l1: string) => {
-    setExpandedL1(prev => {
+    setExpandedL1((prev) => {
       const next = new Set(prev);
-      if (next.has(l1)) next.delete(l1); else next.add(l1);
+      if (next.has(l1)) next.delete(l1);
+      else next.add(l1);
       return next;
     });
   };
-
-  const modalTransactions = useMemo(() => {
-    if (!modalCategory) return [];
-    const txs = selectedMonth === "all"
-      ? allTransactions
-      : allTransactions.filter(t => getAggregationMonth(t) === selectedMonth);
-    return txs
-      .filter(t => {
-        if ((t.categoryL1 || "기타") !== modalCategory.l1) return false;
-        if (modalCategory.l2) return (t.categoryL2 || "미분류") === modalCategory.l2;
-        return true;
-      })
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [modalCategory, allTransactions, selectedMonth]);
 
   const closeModal = useCallback(() => setModalCategory(null), []);
 
   useEffect(() => {
     if (!modalCategory) return;
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") closeModal(); };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeModal();
+    };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, [modalCategory, closeModal]);
 
-  if (loading) {
+  if (loading || !dashData) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[50vh]">
         <p className="text-slate-600">로딩 중...</p>
       </div>
     );
   }
+
+  // Derive chart-compatible shapes from dashData
+  const categoryData = dashData.categoryBreakdown
+    .slice(0, 8)
+    .map((c) => ({ name: c.category, value: c.amount }));
+  const otherSum = dashData.categoryBreakdown
+    .slice(8)
+    .reduce((s, c) => s + c.amount, 0);
+  if (otherSum > 0) categoryData.push({ name: "기타", value: otherSum });
+
+  const necessityData = dashData.necessityBreakdown.map((n) => ({
+    name: n.label,
+    value: n.amount,
+    color: NECESSITY_COLORS[n.label] ?? "#94a3b8",
+  }));
+
+  const familySpendData = dashData.familyBreakdown.map((f) => ({
+    name: f.name,
+    value: f.amount,
+  }));
+
+  // Trend categories (top 5 by total across all time-series data)
+  // The simple trendData from server is month+amount; DashboardCharts also accepts trendData with category keys.
+  // Pass a flat trendData (month+amount) and empty trendCategories to keep charts compatible.
+  const trendCategories: string[] = [];
+  const trendData = dashData.trendData;
+
+  const monthlyData = dashData.trendData.map((d) => ({
+    month: d.month,
+    amount: d.amount,
+  }));
 
   return (
     <div className="p-4 lg:p-6">
@@ -369,7 +179,7 @@ export default function Home() {
               className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
             >
               <option value="all">전체 기간</option>
-              {availableMonths.map((m) => (
+              {dashData.availableMonths.map((m) => (
                 <option key={m} value={m}>
                   {m.replace("-", "년 ")}월
                 </option>
@@ -380,18 +190,18 @@ export default function Home() {
           {/* Gradient hero card: current spend + MoM pill */}
           <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 text-white shadow-lg">
             <p className="text-sm opacity-80">순수 가계지출</p>
-            <p className="text-3xl font-bold mt-1">{dash.pureHouseholdSpend.toLocaleString()}원</p>
-            {dash.momChange && (
+            <p className="text-3xl font-bold mt-1">{dashData.pureHouseholdSpend.toLocaleString()}원</p>
+            {dashData.momChange && (
               <span
                 className={`inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  dash.momChange.amount <= 0
+                  dashData.momChange.amount <= 0
                     ? "bg-green-400/20 text-green-100"
                     : "bg-red-400/20 text-red-100"
                 }`}
               >
-                {dash.momChange.amount > 0 ? "+" : ""}{formatAmount(dash.momChange.amount)}원
-                {dash.momChange.percent !== null && (
-                  <> ({dash.momChange.percent > 0 ? "▲" : "▼"}{Math.abs(dash.momChange.percent)}%)</>
+                {dashData.momChange.amount > 0 ? "+" : ""}{formatAmount(dashData.momChange.amount)}원
+                {dashData.momChange.percent !== null && (
+                  <> ({dashData.momChange.percent > 0 ? "▲" : "▼"}{Math.abs(dashData.momChange.percent)}%)</>
                 )}
               </span>
             )}
@@ -400,18 +210,18 @@ export default function Home() {
           {/* 2-col stat strip: savings rate + transaction count */}
           <div className="grid grid-cols-2 gap-3">
             <div className={`rounded-xl p-4 text-white ${
-              dash.savingsRate !== null && dash.savingsRate >= 0
+              dashData.savingsRate !== null && dashData.savingsRate >= 0
                 ? "bg-teal-500"
                 : "bg-red-500"
             }`}>
               <p className="text-xs opacity-80">저축률</p>
               <p className="text-2xl font-bold">
-                {dash.savingsRate !== null ? `${dash.savingsRate}%` : "-"}
+                {dashData.savingsRate !== null ? `${dashData.savingsRate}%` : "-"}
               </p>
             </div>
             <div className="rounded-xl p-4 bg-white shadow border border-slate-200">
               <p className="text-xs text-slate-500">거래 건수</p>
-              <p className="text-2xl font-bold text-slate-900">{dash.totalCount.toLocaleString()}건</p>
+              <p className="text-2xl font-bold text-slate-900">{dashData.totalCount.toLocaleString()}건</p>
             </div>
           </div>
 
@@ -424,19 +234,19 @@ export default function Home() {
           </Link>
 
           {/* Top-3 categories with progress bars */}
-          {dash.categoryDetails.length > 0 && (
+          {dashData.categoryTable.length > 0 && (
             <div className="bg-white rounded-xl shadow border border-slate-200 p-4">
               <h3 className="text-sm font-semibold text-slate-700 mb-3">상위 카테고리</h3>
               <div className="space-y-3">
-                {dash.categoryDetails.slice(0, 3).map((cat) => {
-                  const pct = dash.pureHouseholdSpend > 0
-                    ? Math.round((cat.total / dash.pureHouseholdSpend) * 100)
+                {dashData.categoryTable.slice(0, 3).map((cat) => {
+                  const pct = dashData.pureHouseholdSpend > 0
+                    ? Math.round((cat.amount / dashData.pureHouseholdSpend) * 100)
                     : 0;
                   return (
-                    <div key={cat.l1}>
+                    <div key={cat.categoryL1}>
                       <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="font-medium text-slate-800">{cat.l1}</span>
-                        <span className="text-slate-500">{cat.total.toLocaleString()}원 ({pct}%)</span>
+                        <span className="font-medium text-slate-800">{cat.categoryL1}</span>
+                        <span className="text-slate-500">{cat.amount.toLocaleString()}원 ({pct}%)</span>
                       </div>
                       <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
                         <div
@@ -459,7 +269,7 @@ export default function Home() {
 
           {/* Income/expense chart (only) */}
           <DashboardCharts
-            incomeExpenseData={dash.incomeExpenseData}
+            incomeExpenseData={dashData.incomeExpenseData}
             monthlyData={[]}
             categoryData={[]}
             necessityData={[]}
@@ -482,12 +292,12 @@ export default function Home() {
           {showMoreCharts && (
             <DashboardCharts
               incomeExpenseData={[]}
-              monthlyData={dash.monthlyData}
-              categoryData={dash.categoryData}
-              necessityData={dash.necessityData}
-              familySpendData={dash.familySpendData}
-              trendData={dash.trendData}
-              trendCategories={dash.trendCategories}
+              monthlyData={monthlyData}
+              categoryData={categoryData}
+              necessityData={necessityData}
+              familySpendData={familySpendData}
+              trendData={trendData}
+              trendCategories={trendCategories}
               selectedMonth={selectedMonth}
             />
           )}
@@ -513,7 +323,7 @@ export default function Home() {
               className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[140px]"
             >
               <option value="all">전체 기간</option>
-              {availableMonths.map((m) => (
+              {dashData.availableMonths.map((m) => (
                 <option key={m} value={m}>
                   {m.replace("-", "년 ")}월
                 </option>
@@ -526,43 +336,43 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg shadow p-5 text-white">
             <p className="text-sm opacity-80">총 수입 (실수령)</p>
-            <p className="text-2xl font-bold mt-1">{dash.totalIncome.toLocaleString()}원</p>
+            <p className="text-2xl font-bold mt-1">{dashData.incomeTotal.toLocaleString()}원</p>
           </div>
 
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow p-5 text-white">
             <p className="text-sm opacity-80">순수 가계지출</p>
-            <p className="text-2xl font-bold mt-1">{dash.pureHouseholdSpend.toLocaleString()}원</p>
+            <p className="text-2xl font-bold mt-1">{dashData.pureHouseholdSpend.toLocaleString()}원</p>
             <p className="text-xs opacity-70 mt-1">회사경비 제외</p>
           </div>
 
           <div className={`bg-gradient-to-r rounded-lg shadow p-5 text-white ${
-            dash.savingsRate !== null && dash.savingsRate >= 0
+            dashData.savingsRate !== null && dashData.savingsRate >= 0
               ? "from-teal-500 to-teal-600"
               : "from-red-500 to-red-600"
           }`}>
             <p className="text-sm opacity-80">저축률</p>
             <p className="text-2xl font-bold mt-1">
-              {dash.savingsRate !== null ? `${dash.savingsRate}%` : "-"}
+              {dashData.savingsRate !== null ? `${dashData.savingsRate}%` : "-"}
             </p>
             <p className="text-xs opacity-70 mt-1">(실수령 - 지출) / 실수령</p>
           </div>
 
           <div className={`bg-gradient-to-r rounded-lg shadow p-5 text-white ${
-            dash.momChange && dash.momChange.amount <= 0
+            dashData.momChange && dashData.momChange.amount <= 0
               ? "from-sky-500 to-sky-600"
               : "from-orange-500 to-orange-600"
           }`}>
             <p className="text-sm opacity-80">전월 대비</p>
-            {dash.momChange ? (
+            {dashData.momChange ? (
               <>
                 <p className="text-2xl font-bold mt-1">
-                  {dash.momChange.amount > 0 ? "+" : ""}{formatAmount(dash.momChange.amount)}원
+                  {dashData.momChange.amount > 0 ? "+" : ""}{formatAmount(dashData.momChange.amount)}원
                 </p>
                 <p className="text-xs opacity-70 mt-1">
-                  {dash.momChange.percent !== null
-                    ? `${dash.momChange.percent > 0 ? "▲" : "▼"} ${Math.abs(dash.momChange.percent)}%`
+                  {dashData.momChange.percent !== null
+                    ? `${dashData.momChange.percent > 0 ? "▲" : "▼"} ${Math.abs(dashData.momChange.percent)}%`
                     : ""}
-                  {dash.momChange.amount > 0 ? " 증가" : " 감소"}
+                  {dashData.momChange.amount > 0 ? " 증가" : " 감소"}
                 </p>
               </>
             ) : (
@@ -575,28 +385,28 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow p-5 border border-slate-200">
             <p className="text-sm text-slate-500">총 지출</p>
-            <p className="text-xl font-bold text-slate-900 mt-1">{dash.totalCardSpend.toLocaleString()}원</p>
+            <p className="text-xl font-bold text-slate-900 mt-1">{dashData.totalSpend.toLocaleString()}원</p>
           </div>
 
           <div className="bg-white rounded-lg shadow p-5 border border-slate-200">
             <p className="text-sm text-slate-500">고정지출 (월)</p>
-            <p className="text-xl font-bold text-slate-900 mt-1">{dash.fixedExpenseMonthly.toLocaleString()}원</p>
+            <p className="text-xl font-bold text-slate-900 mt-1">{dashData.fixedExpenseMonthly.toLocaleString()}원</p>
           </div>
 
           <div className="bg-white rounded-lg shadow p-5 border border-slate-200">
             <p className="text-sm text-slate-500">회사경비</p>
-            <p className="text-xl font-bold text-violet-600 mt-1">{dash.companyExpenseTotal.toLocaleString()}원</p>
+            <p className="text-xl font-bold text-violet-600 mt-1">{dashData.companyExpenseTotal.toLocaleString()}원</p>
           </div>
 
           <div className="bg-white rounded-lg shadow p-5 border border-slate-200">
             <p className="text-sm text-slate-500">세전 급여</p>
-            <p className="text-xl font-bold text-slate-900 mt-1">{dash.grossIncome.toLocaleString()}원</p>
-            <p className="text-xs text-slate-400 mt-1">공제 {dash.totalDeductions.toLocaleString()}원</p>
+            <p className="text-xl font-bold text-slate-900 mt-1">{dashData.grossIncome.toLocaleString()}원</p>
+            <p className="text-xs text-slate-400 mt-1">공제 {dashData.totalDeductions.toLocaleString()}원</p>
           </div>
         </div>
 
         {/* Category Detail Table (shown when specific month selected) */}
-        {selectedMonth !== "all" && dash.categoryDetails.length > 0 && (
+        {selectedMonth !== "all" && dashData.categoryTable.length > 0 && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <h3 className="text-lg font-semibold text-slate-900 mb-4">
               {selectedMonth.replace("-", "년 ")}월 카테고리 상세
@@ -612,23 +422,30 @@ export default function Home() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dash.categoryDetails.map((detail) => {
-                    const isExpanded = expandedL1.has(detail.l1);
-                    const hasL2 = detail.l2Items.length > 1 || (detail.l2Items.length === 1 && detail.l2Items[0].name !== "미분류");
+                  {dashData.categoryTable.map((detail) => {
+                    const isExpanded = expandedL1.has(detail.categoryL1);
+                    const hasL2 =
+                      detail.children.length > 1 ||
+                      (detail.children.length === 1 && detail.children[0].categoryL2 !== "미분류");
                     return (
-                      <Fragment key={detail.l1}>
-                        <tr
-                          className="border-b border-slate-100 bg-slate-50/50"
-                        >
+                      <Fragment key={detail.categoryL1}>
+                        <tr className="border-b border-slate-100 bg-slate-50/50">
                           <td
                             className={`py-3 px-4 font-medium text-slate-900 ${hasL2 ? "cursor-pointer hover:text-blue-600" : ""}`}
-                            onClick={() => hasL2 && toggleL1(detail.l1)}
-                            {...(hasL2 ? {
-                              role: "button",
-                              tabIndex: 0,
-                              onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleL1(detail.l1); } },
-                              "aria-expanded": isExpanded,
-                            } : {})}
+                            onClick={() => hasL2 && toggleL1(detail.categoryL1)}
+                            {...(hasL2
+                              ? {
+                                  role: "button",
+                                  tabIndex: 0,
+                                  onKeyDown: (e: React.KeyboardEvent) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      toggleL1(detail.categoryL1);
+                                    }
+                                  },
+                                  "aria-expanded": isExpanded,
+                                }
+                              : {})}
                           >
                             {hasL2 && (
                               <span className="inline-block w-4 text-slate-400 mr-1">
@@ -636,14 +453,19 @@ export default function Home() {
                               </span>
                             )}
                             {!hasL2 && <span className="inline-block w-4 mr-1" />}
-                            {detail.l1}
+                            {detail.categoryL1}
                           </td>
                           <td
                             className="py-3 px-4 text-right text-slate-600 cursor-pointer hover:text-blue-600 hover:underline"
                             role="button"
                             tabIndex={0}
-                            onClick={() => setModalCategory({ l1: detail.l1 })}
-                            onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setModalCategory({ l1: detail.l1 }); } }}
+                            onClick={() => setModalCategory({ l1: detail.categoryL1 })}
+                            onKeyDown={(e: React.KeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setModalCategory({ l1: detail.categoryL1 });
+                              }
+                            }}
                           >
                             {detail.count}건
                           </td>
@@ -651,47 +473,58 @@ export default function Home() {
                             className="py-3 px-4 text-right font-medium text-slate-900 cursor-pointer hover:text-blue-600 hover:underline"
                             role="button"
                             tabIndex={0}
-                            onClick={() => setModalCategory({ l1: detail.l1 })}
-                            onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setModalCategory({ l1: detail.l1 }); } }}
+                            onClick={() => setModalCategory({ l1: detail.categoryL1 })}
+                            onKeyDown={(e: React.KeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setModalCategory({ l1: detail.categoryL1 });
+                              }
+                            }}
                           >
-                            {detail.total.toLocaleString()}원
+                            {detail.amount.toLocaleString()}원
                           </td>
                           <td className="py-3 px-4 text-right text-slate-600">
-                            {dash.totalCardSpend > 0
-                              ? `${((detail.total / dash.totalCardSpend) * 100).toFixed(1)}%`
+                            {dashData.totalSpend > 0
+                              ? `${((detail.amount / dashData.totalSpend) * 100).toFixed(1)}%`
                               : "-"}
                           </td>
                         </tr>
-                        {isExpanded && detail.l2Items.map((l2) => (
-                          <tr
-                            key={`${detail.l1}-${l2.name}`}
-                            className="border-b border-slate-50 cursor-pointer hover:bg-blue-50/50"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => setModalCategory({ l1: detail.l1, l2: l2.name })}
-                            onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setModalCategory({ l1: detail.l1, l2: l2.name }); } }}
-                          >
-                            <td className="py-2 px-4 pl-12 text-slate-500">└ {l2.name}</td>
-                            <td className="py-2 px-4 text-right text-slate-400">{l2.count}건</td>
-                            <td className="py-2 px-4 text-right text-slate-500">
-                              {l2.amount.toLocaleString()}원
-                            </td>
-                            <td className="py-2 px-4 text-right text-slate-400">
-                              {detail.total > 0
-                                ? `${((l2.amount / detail.total) * 100).toFixed(1)}%`
-                                : "-"}
-                            </td>
-                          </tr>
-                        ))}
+                        {isExpanded &&
+                          detail.children.map((l2) => (
+                            <tr
+                              key={`${detail.categoryL1}-${l2.categoryL2}`}
+                              className="border-b border-slate-50 cursor-pointer hover:bg-blue-50/50"
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => setModalCategory({ l1: detail.categoryL1, l2: l2.categoryL2 })}
+                              onKeyDown={(e: React.KeyboardEvent) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  setModalCategory({ l1: detail.categoryL1, l2: l2.categoryL2 });
+                                }
+                              }}
+                            >
+                              <td className="py-2 px-4 pl-12 text-slate-500">└ {l2.categoryL2}</td>
+                              <td className="py-2 px-4 text-right text-slate-400">{l2.count}건</td>
+                              <td className="py-2 px-4 text-right text-slate-500">
+                                {l2.amount.toLocaleString()}원
+                              </td>
+                              <td className="py-2 px-4 text-right text-slate-400">
+                                {detail.amount > 0
+                                  ? `${((l2.amount / detail.amount) * 100).toFixed(1)}%`
+                                  : "-"}
+                              </td>
+                            </tr>
+                          ))}
                       </Fragment>
                     );
                   })}
                   {/* Total row */}
                   <tr className="border-t-2 border-slate-300 font-bold">
                     <td className="py-3 px-4 text-slate-900">합계</td>
-                    <td className="py-3 px-4 text-right text-slate-900">{dash.totalCount}건</td>
+                    <td className="py-3 px-4 text-right text-slate-900">{dashData.totalCount}건</td>
                     <td className="py-3 px-4 text-right text-slate-900">
-                      {dash.totalCardSpend.toLocaleString()}원
+                      {dashData.totalSpend.toLocaleString()}원
                     </td>
                     <td className="py-3 px-4 text-right text-slate-600">100%</td>
                   </tr>
@@ -703,13 +536,13 @@ export default function Home() {
 
         {/* Charts (dynamically loaded - Recharts code-split) */}
         <DashboardCharts
-          incomeExpenseData={dash.incomeExpenseData}
-          monthlyData={dash.monthlyData}
-          categoryData={dash.categoryData}
-          necessityData={dash.necessityData}
-          familySpendData={dash.familySpendData}
-          trendData={dash.trendData}
-          trendCategories={dash.trendCategories}
+          incomeExpenseData={dashData.incomeExpenseData}
+          monthlyData={monthlyData}
+          categoryData={categoryData}
+          necessityData={necessityData}
+          familySpendData={familySpendData}
+          trendData={trendData}
+          trendCategories={trendCategories}
           selectedMonth={selectedMonth}
         />
         </div>
@@ -736,7 +569,11 @@ export default function Home() {
                   )}
                 </h3>
                 <p className="text-sm text-slate-500 mt-0.5">
-                  {modalTransactions.length}건 &middot; {modalTransactions.reduce((s, t) => s + Math.abs(t.amount), 0).toLocaleString()}원
+                  {modalLoading
+                    ? "로딩 중..."
+                    : `${modalTransactions.length}건 · ${modalTransactions
+                        .reduce((s, t) => s + Math.abs(t.amount), 0)
+                        .toLocaleString()}원`}
                 </p>
               </div>
               <button
@@ -750,35 +587,39 @@ export default function Home() {
 
             {/* Modal Body */}
             <div className="overflow-y-auto flex-1 px-6">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-white">
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-2 pr-2 text-slate-500 font-medium">날짜</th>
-                    <th className="text-left py-2 pr-2 text-slate-500 font-medium">카드</th>
-                    <th className="text-left py-2 pr-2 text-slate-500 font-medium">가맹점</th>
-                    <th className="text-right py-2 text-slate-500 font-medium">금액</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {modalTransactions.map((tx) => (
-                    <tr key={tx.id} className="border-b border-slate-50 hover:bg-slate-50/50">
-                      <td className="py-2 pr-2 text-slate-600 whitespace-nowrap">
-                        <div>{tx.aggregationDate || tx.date}</div>
-                        {(tx.originalDate || tx.date) !== (tx.aggregationDate || tx.date) && (
-                          <div className="text-xs text-slate-400">
-                            원거래일 {tx.originalDate || tx.date}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-2 pr-2 text-slate-400 text-xs whitespace-nowrap">{tx.cardCompany}</td>
-                      <td className="py-2 pr-2 text-slate-800 truncate max-w-[200px]">{tx.merchant}</td>
-                      <td className="py-2 text-right font-medium text-slate-900 whitespace-nowrap">
-                        {Math.abs(tx.amount).toLocaleString()}원
-                      </td>
+              {modalLoading ? (
+                <div className="py-8 text-center text-slate-400">로딩 중...</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left py-2 pr-2 text-slate-500 font-medium">날짜</th>
+                      <th className="text-left py-2 pr-2 text-slate-500 font-medium">카드</th>
+                      <th className="text-left py-2 pr-2 text-slate-500 font-medium">가맹점</th>
+                      <th className="text-right py-2 text-slate-500 font-medium">금액</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {modalTransactions.map((tx) => (
+                      <tr key={tx.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                        <td className="py-2 pr-2 text-slate-600 whitespace-nowrap">
+                          <div>{tx.aggregationDate || tx.date}</div>
+                          {(tx.originalDate || tx.date) !== (tx.aggregationDate || tx.date) && (
+                            <div className="text-xs text-slate-400">
+                              원거래일 {tx.originalDate || tx.date}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-2 pr-2 text-slate-400 text-xs whitespace-nowrap">{tx.cardCompany}</td>
+                        <td className="py-2 pr-2 text-slate-800 truncate max-w-[200px]">{tx.merchant}</td>
+                        <td className="py-2 text-right font-medium text-slate-900 whitespace-nowrap">
+                          {Math.abs(tx.amount).toLocaleString()}원
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
 
             {/* Modal Footer */}
