@@ -159,6 +159,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Import error:", error);
-    return NextResponse.json({ error: "임포트 중 오류 발생" }, { status: 500 });
+    return NextResponse.json({ error: "임포트 중 오류 발생" , errorId: crypto.randomUUID() }, { status: 500 });
   }
 }

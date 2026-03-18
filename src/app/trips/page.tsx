@@ -30,6 +30,7 @@ export default function TripsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [modalData, setModalData] = useState<{
     tripName: string;
     category: string;
@@ -60,12 +61,18 @@ export default function TripsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) return;
+    setError(null);
 
-    await fetch("/api/trips", {
+    const res = await fetch("/api/trips", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
+
+    if (!res.ok) {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
+      return;
+    }
 
     setForm(emptyForm);
     setShowForm(false);
@@ -73,18 +80,28 @@ export default function TripsPage() {
   }
 
   async function handleUpdate(id: number) {
-    await fetch(`/api/trips/${id}`, {
+    setError(null);
+    const res = await fetch(`/api/trips/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editForm),
     });
+    if (!res.ok) {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
+      return;
+    }
     setEditingId(null);
     fetchTrips();
   }
 
   async function handleDelete(id: number) {
     if (!confirm("이 여행을 삭제하시겠습니까?")) return;
-    await fetch(`/api/trips/${id}`, { method: "DELETE" });
+    setError(null);
+    const res = await fetch(`/api/trips/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
+      return;
+    }
     fetchTrips();
   }
 
@@ -197,6 +214,12 @@ export default function TripsPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold text-slate-800 mb-6">여행 관리</h1>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" aria-live="assertive">
+          {error}
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

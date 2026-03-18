@@ -11,6 +11,7 @@ export default function FamilyPage() {
   const [members, setMembers] = useState<FamilyMemberDetail[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchMembers = useCallback(async () => {
     const res = await fetch("/api/family");
@@ -25,15 +26,33 @@ export default function FamilyPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) return;
+    setError(null);
 
-    await fetch("/api/family", {
+    const res = await fetch("/api/family", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
 
+    if (!res.ok) {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
+      return;
+    }
+
     setForm(emptyForm);
     setShowForm(false);
+    fetchMembers();
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm("이 구성원을 삭제하시겠습니까?")) return;
+    setError(null);
+
+    const res = await fetch(`/api/family/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
+      return;
+    }
     fetchMembers();
   }
 
@@ -52,6 +71,12 @@ export default function FamilyPage() {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold text-slate-800 mb-6">가족 구성원</h1>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" aria-live="assertive">
+          {error}
+        </div>
+      )}
 
       {/* Add Button */}
       <button
@@ -174,6 +199,12 @@ export default function FamilyPage() {
                 </div>
               </div>
             </div>
+            <button
+              onClick={() => handleDelete(m.id)}
+              className="bg-red-100 text-red-700 px-3 py-1.5 rounded text-sm hover:bg-red-200"
+            >
+              삭제
+            </button>
           </div>
         ))}
       </div>

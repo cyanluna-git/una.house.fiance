@@ -41,8 +41,8 @@ export default function IncomePage() {
       const res = await fetch("/api/income");
       const data = await res.json();
       setStatements(data.data || []);
-    } catch (error) {
-      console.error("Failed to fetch:", error);
+    } catch {
+      setMessage({ type: "error", text: "오류가 발생했습니다. 다시 시도해 주세요." });
     } finally {
       setLoading(false);
     }
@@ -95,9 +95,8 @@ export default function IncomePage() {
       if (result.successCount > 0) {
         fetchStatements();
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: "error", text: "업로드 중 오류 발생" });
-      console.error(error);
     } finally {
       setUploading(false);
       e.target.value = "";

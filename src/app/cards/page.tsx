@@ -126,6 +126,7 @@ export default function CardsPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [showInactive, setShowInactive] = useState(false);
   const [usageMonth, setUsageMonth] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
   const fetchCards = useCallback(async () => {
     const res = await fetch("/api/cards");
@@ -159,6 +160,7 @@ export default function CardsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.cardName.trim()) return;
+    setError(null);
 
     const res = await fetch("/api/cards", {
       method: "POST",
@@ -166,6 +168,11 @@ export default function CardsPage() {
       body: JSON.stringify(form),
     });
     const result = await res.json();
+
+    if (!res.ok) {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
+      return;
+    }
 
     setForm(emptyForm);
     setShowForm(false);
@@ -177,28 +184,43 @@ export default function CardsPage() {
   }
 
   async function handleUpdate(id: number) {
-    await fetch(`/api/cards/${id}`, {
+    setError(null);
+    const res = await fetch(`/api/cards/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editForm),
     });
+    if (!res.ok) {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
+      return;
+    }
     setEditingId(null);
     fetchCards();
   }
 
   async function handleDelete(id: number) {
     if (!confirm("이 카드를 삭제하시겠습니까? 연결된 거래의 카드 연결이 해제됩니다.")) return;
-    await fetch(`/api/cards/${id}`, { method: "DELETE" });
+    setError(null);
+    const res = await fetch(`/api/cards/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
+      return;
+    }
     fetchCards();
   }
 
   async function handleDeactivate(card: Card) {
     if (!confirm(`"${card.cardName}" 카드를 비활성화하시겠습니까?`)) return;
-    await fetch(`/api/cards/${card.id}`, {
+    setError(null);
+    const res = await fetch(`/api/cards/${card.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: false }),
     });
+    if (!res.ok) {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
+      return;
+    }
     fetchCards();
   }
 
@@ -601,6 +623,12 @@ export default function CardsPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold text-slate-800 mb-6">카드 관리</h1>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" aria-live="assertive">
+          {error}
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

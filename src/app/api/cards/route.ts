@@ -58,7 +58,7 @@ export async function GET() {
     return NextResponse.json({ data: result, usageMonth: monthPrefix });
   } catch (error) {
     console.error("GET /api/cards error:", error);
-    return NextResponse.json({ error: "조회 실패" }, { status: 500 });
+    return NextResponse.json({ error: "조회 실패", errorId: crypto.randomUUID() }, { status: 500 });
   }
 }
 
@@ -114,6 +114,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("POST /api/cards error:", error);
-    return NextResponse.json({ error: "등록 실패" }, { status: 500 });
+    return NextResponse.json({ error: "등록 실패", errorId: crypto.randomUUID() }, { status: 500 });
   }
 }

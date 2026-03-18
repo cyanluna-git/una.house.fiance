@@ -112,8 +112,8 @@ export default function LoansPage() {
       const res = await fetch("/api/loans");
       const data = await res.json();
       setLoans(data.data || []);
-    } catch (error) {
-      console.error("Failed to fetch loans:", error);
+    } catch {
+      setMessage({ type: "error", text: "오류가 발생했습니다. 다시 시도해 주세요." });
     } finally {
       setLoading(false);
     }
@@ -128,8 +128,8 @@ export default function LoansPage() {
       const res = await fetch(`/api/loans/${loanId}/repayments`);
       const data = await res.json();
       setRepayments((prev) => ({ ...prev, [loanId]: data.data || [] }));
-    } catch (error) {
-      console.error("Failed to fetch repayments:", error);
+    } catch {
+      setMessage({ type: "error", text: "오류가 발생했습니다. 다시 시도해 주세요." });
     }
   }, []);
 
@@ -139,8 +139,8 @@ export default function LoansPage() {
       const res = await fetch(`/api/loans/${loanId}/match-transactions`);
       const data = await res.json();
       setMatchedTxns((prev) => ({ ...prev, [loanId]: data.data || [] }));
-    } catch (error) {
-      console.error("Failed to fetch matched transactions:", error);
+    } catch {
+      setMessage({ type: "error", text: "오류가 발생했습니다. 다시 시도해 주세요." });
     } finally {
       setMatchLoading(null);
     }
@@ -159,8 +159,8 @@ export default function LoansPage() {
           totalPayment: data.totalPayment,
         },
       }));
-    } catch (error) {
-      console.error("Failed to fetch schedule:", error);
+    } catch {
+      setMessage({ type: "error", text: "오류가 발생했습니다. 다시 시도해 주세요." });
     }
   }, []);
 

@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: result, total, page, limit });
   } catch (error) {
     console.error("GET /api/transactions error:", error);
-    return NextResponse.json({ error: "조회 실패" }, { status: 500 });
+    return NextResponse.json({ error: "조회 실패" , errorId: crypto.randomUUID() }, { status: 500 });
   }
 }
 
@@ -117,6 +117,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("POST /api/transactions error:", error);
-    return NextResponse.json({ error: "저장 실패" }, { status: 500 });
+    return NextResponse.json({ error: "저장 실패" , errorId: crypto.randomUUID() }, { status: 500 });
   }
 }

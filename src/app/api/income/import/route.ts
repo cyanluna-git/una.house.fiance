@@ -107,6 +107,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ results, successCount, totalCount: files.length });
   } catch (error) {
     console.error("POST /api/income/import error:", error);
-    return NextResponse.json({ error: "업로드 실패" }, { status: 500 });
+    return NextResponse.json({ error: "업로드 실패" , errorId: crypto.randomUUID() }, { status: 500 });
   }
 }

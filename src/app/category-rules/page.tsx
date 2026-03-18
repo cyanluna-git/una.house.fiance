@@ -30,6 +30,7 @@ const EMPTY_RULE = {
 export default function CategoryRulesPage() {
   const [rules, setRules] = useState<CategoryRule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterL1, setFilterL1] = useState("");
 
@@ -56,8 +57,8 @@ export default function CategoryRulesPage() {
       const res = await fetch(`/api/category-rules?${params}`);
       const data = await res.json();
       setRules(data.data || []);
-    } catch (error) {
-      console.error("Failed to fetch rules:", error);
+    } catch {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
     } finally {
       setLoading(false);
     }
@@ -79,8 +80,8 @@ export default function CategoryRulesPage() {
       });
       const data = await res.json();
       setTestResult(data);
-    } catch (error) {
-      console.error("Test failed:", error);
+    } catch {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
     } finally {
       setTesting(false);
     }
@@ -106,8 +107,8 @@ export default function CategoryRulesPage() {
         setNewRule(EMPTY_RULE);
         fetchRules();
       }
-    } catch (error) {
-      console.error("Failed to add:", error);
+    } catch {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
     }
   };
 
@@ -129,8 +130,8 @@ export default function CategoryRulesPage() {
         setEditingId(null);
         fetchRules();
       }
-    } catch (error) {
-      console.error("Failed to save:", error);
+    } catch {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
     }
   };
 
@@ -144,8 +145,8 @@ export default function CategoryRulesPage() {
       if (res.ok) {
         fetchRules();
       }
-    } catch (error) {
-      console.error("Failed to delete:", error);
+    } catch {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
     }
   };
 
@@ -215,6 +216,12 @@ export default function CategoryRulesPage() {
             총 {rules.length}개 규칙
           </span>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" aria-live="assertive">
+            {error}
+          </div>
+        )}
 
         {/* Match Test */}
         <div className="bg-white rounded-lg shadow p-4 mb-4">

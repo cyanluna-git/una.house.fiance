@@ -50,6 +50,6 @@ export async function DELETE(
     });
   } catch (error) {
     console.error("DELETE /api/loans/[id]/repayments/[repaymentId] error:", error);
-    return NextResponse.json({ error: "삭제 실패" }, { status: 500 });
+    return NextResponse.json({ error: "삭제 실패" , errorId: crypto.randomUUID() }, { status: 500 });
   }
 }

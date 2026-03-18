@@ -32,7 +32,7 @@ export async function PUT(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("PUT /api/trips/[id] error:", error);
-    return NextResponse.json({ error: "수정 실패" }, { status: 500 });
+    return NextResponse.json({ error: "수정 실패", errorId: crypto.randomUUID() }, { status: 500 });
   }
 }
 
@@ -53,6 +53,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("DELETE /api/trips/[id] error:", error);
-    return NextResponse.json({ error: "삭제 실패" }, { status: 500 });
+    return NextResponse.json({ error: "삭제 실패", errorId: crypto.randomUUID() }, { status: 500 });
   }
 }

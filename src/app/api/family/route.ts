@@ -9,7 +9,7 @@ export async function GET() {
     return NextResponse.json({ data });
   } catch (error) {
     console.error("GET /api/family error:", error);
-    return NextResponse.json({ error: "조회 실패" }, { status: 500 });
+    return NextResponse.json({ error: "조회 실패", errorId: crypto.randomUUID() }, { status: 500 });
   }
 }
 
@@ -40,6 +40,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("POST /api/family error:", error);
-    return NextResponse.json({ error: "저장 실패" }, { status: 500 });
+    return NextResponse.json({ error: "저장 실패", errorId: crypto.randomUUID() }, { status: 500 });
   }
 }

@@ -240,9 +240,8 @@ export default function ManualPage() {
       } else {
         showToast("저장 실패");
       }
-    } catch (error) {
+    } catch {
       showToast("오류 발생");
-      console.error(error);
     } finally {
       setSubmitting(false);
     }

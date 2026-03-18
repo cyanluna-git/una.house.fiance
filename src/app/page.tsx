@@ -53,6 +53,7 @@ export default function Home() {
   const [expandedL1, setExpandedL1] = useState<Set<string>>(new Set());
   const [modalCategory, setModalCategory] = useState<{ l1: string; l2?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showMoreCharts, setShowMoreCharts] = useState(false);
 
   useEffect(() => {
@@ -73,8 +74,8 @@ export default function Home() {
         setAllSalaries(incomeResult.data || []);
         setFixedExpenses(fixedResult.data || []);
         setFamilyMembers(familyResult.data || []);
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
+      } catch {
+        setError("오류가 발생했습니다. 다시 시도해 주세요.");
       } finally {
         setLoading(false);
       }
@@ -347,6 +348,12 @@ export default function Home() {
   return (
     <div className="p-4 lg:p-6">
       <div className="lg:max-w-7xl lg:mx-auto">
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" aria-live="assertive">
+            {error}
+          </div>
+        )}
 
         {/* ===== MOBILE HERO (md:hidden) ===== */}
         <div className="md:hidden space-y-4">

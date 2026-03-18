@@ -23,6 +23,7 @@ export default function TransactionsPage() {
     categoryL2: "",
     card: "",
   });
+  const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Transaction>>({});
   const [cardList, setCardList] = useState<CardInfo[]>([]);
@@ -52,8 +53,8 @@ export default function TransactionsPage() {
       const data = await response.json();
       setTransactions(data.data || []);
       setTotal(data.total || 0);
-    } catch (error) {
-      console.error("Failed to fetch:", error);
+    } catch {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
     } finally {
       setLoading(false);
     }
@@ -110,8 +111,8 @@ export default function TransactionsPage() {
         setEditingId(null);
         fetchTransactions();
       }
-    } catch (error) {
-      console.error("Failed to save:", error);
+    } catch {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
     }
   };
 
@@ -126,8 +127,8 @@ export default function TransactionsPage() {
       if (response.ok) {
         fetchTransactions();
       }
-    } catch (error) {
-      console.error("Failed to delete:", error);
+    } catch {
+      setError("오류가 발생했습니다. 다시 시도해 주세요.");
     }
   };
 
@@ -152,6 +153,12 @@ export default function TransactionsPage() {
     <div className="p-3 md:p-6">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 md:mb-6">거래 내역</h1>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" aria-live="assertive">
+            {error}
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">

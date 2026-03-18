@@ -21,7 +21,7 @@ export async function GET(
     return NextResponse.json({ data: splits });
   } catch (error) {
     console.error("GET splits error:", error);
-    return NextResponse.json({ error: "조회 실패" }, { status: 500 });
+    return NextResponse.json({ error: "조회 실패" , errorId: crypto.randomUUID() }, { status: 500 });
   }
 }
 
@@ -86,7 +86,7 @@ export async function POST(
     return NextResponse.json({ success: true, count: splits.length });
   } catch (error) {
     console.error("POST splits error:", error);
-    return NextResponse.json({ error: "분할 저장 실패" }, { status: 500 });
+    return NextResponse.json({ error: "분할 저장 실패" , errorId: crypto.randomUUID() }, { status: 500 });
   }
 }
 
@@ -104,6 +104,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("DELETE splits error:", error);
-    return NextResponse.json({ error: "분할 삭제 실패" }, { status: 500 });
+    return NextResponse.json({ error: "분할 삭제 실패" , errorId: crypto.randomUUID() }, { status: 500 });
   }
 }

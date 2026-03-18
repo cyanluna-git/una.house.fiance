@@ -67,6 +67,6 @@ export async function GET(
     });
   } catch (error) {
     console.error("GET /api/loans/[id]/match-transactions error:", error);
-    return NextResponse.json({ error: "조회 실패" }, { status: 500 });
+    return NextResponse.json({ error: "조회 실패" , errorId: crypto.randomUUID() }, { status: 500 });
   }
 }
