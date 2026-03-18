@@ -650,6 +650,12 @@ export default function Home() {
                           <td
                             className={`py-3 px-4 font-medium text-slate-900 ${hasL2 ? "cursor-pointer hover:text-blue-600" : ""}`}
                             onClick={() => hasL2 && toggleL1(detail.l1)}
+                            {...(hasL2 ? {
+                              role: "button",
+                              tabIndex: 0,
+                              onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleL1(detail.l1); } },
+                              "aria-expanded": isExpanded,
+                            } : {})}
                           >
                             {hasL2 && (
                               <span className="inline-block w-4 text-slate-400 mr-1">
@@ -661,13 +667,19 @@ export default function Home() {
                           </td>
                           <td
                             className="py-3 px-4 text-right text-slate-600 cursor-pointer hover:text-blue-600 hover:underline"
+                            role="button"
+                            tabIndex={0}
                             onClick={() => setModalCategory({ l1: detail.l1 })}
+                            onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setModalCategory({ l1: detail.l1 }); } }}
                           >
                             {detail.count}건
                           </td>
                           <td
                             className="py-3 px-4 text-right font-medium text-slate-900 cursor-pointer hover:text-blue-600 hover:underline"
+                            role="button"
+                            tabIndex={0}
                             onClick={() => setModalCategory({ l1: detail.l1 })}
+                            onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setModalCategory({ l1: detail.l1 }); } }}
                           >
                             {detail.total.toLocaleString()}원
                           </td>
@@ -681,7 +693,10 @@ export default function Home() {
                           <tr
                             key={`${detail.l1}-${l2.name}`}
                             className="border-b border-slate-50 cursor-pointer hover:bg-blue-50/50"
+                            role="button"
+                            tabIndex={0}
                             onClick={() => setModalCategory({ l1: detail.l1, l2: l2.name })}
+                            onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setModalCategory({ l1: detail.l1, l2: l2.name }); } }}
                           >
                             <td className="py-2 px-4 pl-12 text-slate-500">└ {l2.name}</td>
                             <td className="py-2 px-4 text-right text-slate-400">{l2.count}건</td>
@@ -753,7 +768,8 @@ export default function Home() {
               </div>
               <button
                 onClick={closeModal}
-                className="text-slate-400 hover:text-slate-600 text-2xl leading-none px-2"
+                className="text-slate-400 hover:text-slate-600 text-2xl leading-none px-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
+                aria-label="닫기"
               >
                 &times;
               </button>

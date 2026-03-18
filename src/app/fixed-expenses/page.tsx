@@ -467,9 +467,11 @@ export default function FixedExpensesPage() {
         }`}
       >
         {/* Header */}
-        <div
-          className="px-5 py-4 cursor-pointer hover:bg-slate-50 transition"
+        <button
+          type="button"
+          className="px-5 py-4 cursor-pointer hover:bg-slate-50 transition w-full text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
           onClick={() => setExpandedId(expandedId === expense.id ? null : expense.id)}
+          aria-expanded={expandedId === expense.id}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -509,7 +511,7 @@ export default function FixedExpensesPage() {
               </div>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Expanded */}
         {expandedId === expense.id && (

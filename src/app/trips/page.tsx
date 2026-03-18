@@ -302,11 +302,13 @@ export default function TripsPage() {
               className="bg-white rounded-xl shadow border border-slate-200 overflow-hidden"
             >
               {/* Header */}
-              <div
-                className="px-5 py-4 cursor-pointer hover:bg-slate-50 transition"
+              <button
+                type="button"
+                className="px-5 py-4 cursor-pointer hover:bg-slate-50 transition w-full text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
                 onClick={() =>
                   setExpandedId(expandedId === trip.id ? null : trip.id)
                 }
+                aria-expanded={expandedId === trip.id}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -350,7 +352,7 @@ export default function TripsPage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </button>
 
               {/* Expanded Detail */}
               {expandedId === trip.id && (
@@ -460,7 +462,8 @@ export default function TripsPage() {
               </div>
               <button
                 onClick={() => setModalData(null)}
-                className="text-slate-400 hover:text-slate-600 text-xl"
+                className="text-slate-400 hover:text-slate-600 text-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
+                aria-label="닫기"
               >
                 ✕
               </button>

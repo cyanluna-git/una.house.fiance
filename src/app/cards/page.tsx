@@ -463,11 +463,13 @@ export default function CardsPage() {
         }`}
       >
         {/* Header */}
-        <div
-          className="px-5 py-4 cursor-pointer hover:bg-slate-50 transition"
+        <button
+          type="button"
+          className="px-5 py-4 cursor-pointer hover:bg-slate-50 transition w-full text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
           onClick={() =>
             setExpandedId(expandedId === card.id ? null : card.id)
           }
+          aria-expanded={expandedId === card.id}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -510,7 +512,7 @@ export default function CardsPage() {
             </div>
           </div>
           {!isInactive && renderProgressBar(card.monthlyUsage, card.monthlyTarget)}
-        </div>
+        </button>
 
         {/* Expanded */}
         {expandedId === card.id && (

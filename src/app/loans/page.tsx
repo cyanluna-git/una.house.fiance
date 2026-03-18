@@ -607,6 +607,8 @@ export default function LoansPage() {
         {/* Message */}
         {message && (
           <div
+            role="status"
+            aria-live="polite"
             className={`mb-6 p-4 rounded-lg ${
               message.type === "success"
                 ? "bg-green-50 text-green-700 border border-green-200"

@@ -141,7 +141,7 @@ export default function ImportPage() {
 
         {/* Result */}
         {result && (
-          <div className="mt-8 p-6 bg-green-50 border border-green-200 rounded-lg">
+          <div className="mt-8 p-6 bg-green-50 border border-green-200 rounded-lg" aria-live="polite">
             <h3 className="text-lg font-semibold text-green-900 mb-4">✓ 임포트 성공</h3>
             <div className="space-y-2 text-slate-700">
               <p><strong>파일명:</strong> {result.fileName}</p>
@@ -155,7 +155,7 @@ export default function ImportPage() {
 
         {/* Error */}
         {error && (
-          <div className="mt-8 p-6 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mt-8 p-6 bg-red-50 border border-red-200 rounded-lg" aria-live="assertive">
             <h3 className="text-lg font-semibold text-red-900 mb-2">✗ 오류</h3>
             <p className="text-red-700">{error}</p>
           </div>
