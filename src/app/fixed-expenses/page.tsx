@@ -5,7 +5,7 @@ import { calcMonthlyAmount } from "@/lib/fixed-expense-calc";
 import type { FixedExpense, FamilyMember } from "@/types";
 
 const CATEGORIES = ["적금", "용돈", "회비", "보험", "공과금", "교육", "기부", "기타"];
-const PAYMENT_METHODS = ["자동이체", "계좌이체", "카드", "현금"];
+const PAYMENT_METHODS = ["자동이체", "계좌이체", "카드", "현금", "지역상품권"];
 const FREQUENCIES = [
   { value: "monthly", label: "매월" },
   { value: "weekly", label: "매주" },
@@ -344,7 +344,7 @@ export default function FixedExpensesPage() {
           </div>
         )}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">이체방법</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">결제방법</label>
           <select
             value={data.paymentMethod}
             onChange={(e) => setData(prev => ({ ...prev, paymentMethod: e.target.value }))}
@@ -518,7 +518,7 @@ export default function FixedExpensesPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
                   <div><span className="text-slate-500">분류:</span> {expense.category}</div>
                   <div><span className="text-slate-500">주기:</span> {freqBadge}</div>
-                  <div><span className="text-slate-500">이체방법:</span> {expense.paymentMethod || "-"}</div>
+                  <div><span className="text-slate-500">결제방법:</span> {expense.paymentMethod || "-"}</div>
                   <div><span className="text-slate-500">수취처:</span> {expense.recipient || "-"}</div>
                   <div><span className="text-slate-500">시작일:</span> {expense.startDate}</div>
                   <div><span className="text-slate-500">종료일:</span> {expense.endDate || "없음 (진행중)"}</div>
