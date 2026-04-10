@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
       categoryL3,
       note,
       sourceType = "manual",
+      isCompanyExpense = false,
     } = body;
 
     if (!date || !merchant || !amount) {
@@ -105,6 +106,7 @@ export async function POST(request: NextRequest) {
         necessity: cat.necessity,
         familyMemberId: body.familyMemberId || null,
         tripId: body.tripId || null,
+        isCompanyExpense: Boolean(isCompanyExpense),
         note,
         sourceType,
         isManual: true,
