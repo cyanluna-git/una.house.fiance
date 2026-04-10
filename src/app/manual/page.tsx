@@ -337,6 +337,7 @@ export default function ManualPage() {
           </label>
           <input
             type="text"
+            lang="ko"
             value={merchant}
             onChange={(e) => setMerchant(e.target.value)}
             placeholder={
