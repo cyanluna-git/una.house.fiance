@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
     // Save to database
     let savedCount = 0;
     let duplicateCount = 0;
+    let skippedManualDuplicates = 0;
     const statementMonth = parseStatementMonthFromFileName(file.name);
 
     // Batch-load all cards to avoid N+1 queries
@@ -109,6 +110,12 @@ export async function POST(request: NextRequest) {
     });
 
     try {
+      const checkManualDuplicate = sqlite.prepare(`
+        SELECT 1 FROM transactions
+        WHERE source_type = 'manual' AND date = ? AND amount = ? AND card_company = ?
+        LIMIT 1
+      `);
+
       const insertOne = sqlite.prepare(`
         INSERT INTO transactions (
           date, original_date, billing_month, payment_month_candidate,
@@ -130,6 +137,16 @@ export async function POST(request: NextRequest) {
 
       const runAll = sqlite.transaction((rows: typeof transactionsToSave) => {
         for (const t of rows) {
+          // Skip if a manually entered transaction exists with same date/amount/cardCompany.
+          // Merchant names differ between manual input and card statements, so we match on 3-tuple.
+          if (t.cardCompany) {
+            const manualMatch = checkManualDuplicate.get(t.date, t.amount, t.cardCompany);
+            if (manualMatch) {
+              skippedManualDuplicates++;
+              continue;
+            }
+          }
+
           const result = insertOne.run(
             t.date, t.originalDate, t.billingMonth, t.paymentMonthCandidate,
             t.aggregationDate, t.aggregationMonth, t.aggregationBasis,
@@ -155,6 +172,7 @@ export async function POST(request: NextRequest) {
       success: true,
       savedCount,
       duplicateCount,
+      skippedManualDuplicates,
       fileName: file.name,
     });
   } catch (error) {

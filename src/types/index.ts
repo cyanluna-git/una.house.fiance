@@ -142,6 +142,7 @@ export interface ImportResult {
   fileName: string;
   savedCount: number;
   duplicateCount: number;
+  skippedManualDuplicates: number;
 }
 
 /** Seed rule shape used in db initialization */

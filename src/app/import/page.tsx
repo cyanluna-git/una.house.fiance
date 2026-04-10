@@ -150,6 +150,9 @@ export default function ImportPage() {
               {result.duplicateCount > 0 && (
                 <p><strong>중복 건수:</strong> {result.duplicateCount}건</p>
               )}
+              {result.skippedManualDuplicates > 0 && (
+                <p><strong>수동입력과 중복:</strong> {result.skippedManualDuplicates}건 건너뜀</p>
+              )}
             </div>
           </div>
         )}
