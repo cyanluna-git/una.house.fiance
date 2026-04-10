@@ -47,10 +47,15 @@ export default function QuickCategoryPicker({
       const container = l1ScrollRef.current;
       const chip = selectedL1Ref.current;
       const chipLeft = chip.offsetLeft;
-      const chipWidth = chip.offsetWidth;
+      const chipRight = chipLeft + chip.offsetWidth;
+      const scrollLeft = container.scrollLeft;
       const containerWidth = container.offsetWidth;
-      const scrollTarget = chipLeft - containerWidth / 2 + chipWidth / 2;
-      container.scrollTo({ left: scrollTarget, behavior: "smooth" });
+
+      if (chipLeft < scrollLeft) {
+        container.scrollTo({ left: chipLeft - 8, behavior: "smooth" });
+      } else if (chipRight > scrollLeft + containerWidth) {
+        container.scrollTo({ left: chipRight - containerWidth + 8, behavior: "smooth" });
+      }
     }
   }, [selectedL1]);
 
