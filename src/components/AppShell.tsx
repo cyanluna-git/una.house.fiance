@@ -52,12 +52,17 @@ function getTitle(pathname: string): string {
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const isUnlockPage = pathname === "/unlock";
 
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
 
   const title = useMemo(() => getTitle(pathname), [pathname]);
+
+  if (isUnlockPage) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 lg:flex">

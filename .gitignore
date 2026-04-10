@@ -23,6 +23,7 @@ tmp-db-backups/
 
 # env files
 .env
+.env.production
 .env*.local
 
 # debug logs
@@ -47,6 +48,10 @@ Thumbs.db
 workthrough/.vitepress/cache/
 workthrough/.vitepress/dist/
 workthrough/node_modules/
+workthrough/*.pdf
+
+# kanban workspace
+.codex/
 
 # build cache
 tsconfig.tsbuildinfo
