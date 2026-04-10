@@ -6,6 +6,8 @@ export default defineConfig({
   test: {
     include: ["tests/api/**/*.test.ts"],
     environment: "node",
+    globalSetup: ["tests/fixtures/vitest-server-setup.ts"],
+    testTimeout: 30_000,
     env: {
       UNAHOUSE_DB_PATH: "test.db",
       UNAHOUSE_ACCESS_KEY_BASE64: "test-key-base64",
