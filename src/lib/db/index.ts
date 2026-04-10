@@ -7,7 +7,9 @@ import {
   parseStatementMonthFromFileName,
 } from "@/lib/statement-date";
 
-const dbPath = path.join(process.cwd(), "finance.db");
+const dbPath = process.env.UNAHOUSE_DB_PATH
+  ? path.resolve(process.env.UNAHOUSE_DB_PATH)
+  : path.join(process.cwd(), "finance.db");
 const sqlite = new Database(dbPath);
 
 sqlite.pragma("journal_mode = WAL");

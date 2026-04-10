@@ -58,3 +58,9 @@ tsconfig.tsbuildinfo
 
 # claude
 .claude/
+
+# test artifacts
+tests/fixtures/.auth-state.json
+test.db
+test.db-shm
+test.db-wal

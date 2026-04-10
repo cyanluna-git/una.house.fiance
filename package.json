@@ -12,7 +12,10 @@
     "db:generate": "drizzle-kit generate",
     "import": "tsx scripts/bulk-import.ts",
     "test:parsers": "tsx scripts/test-parsers.ts",
-    "verify:aggregation": "tsx scripts/verify-aggregation-month.ts"
+    "verify:aggregation": "tsx scripts/verify-aggregation-month.ts",
+    "test:e2e": "playwright test",
+    "test:api": "vitest run tests/api",
+    "test:all": "pnpm test:api && pnpm test:e2e"
   },
   "dependencies": {
     "better-sqlite3": "latest",
@@ -36,11 +39,13 @@
     ]
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/better-sqlite3": "^7.6.8",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "autoprefixer": "^10.4.16",
+    "dotenv": "^17.4.1",
     "drizzle-kit": "^0.20.0",
     "eslint": "^8.55.0",
     "eslint-config-next": "^15.0.0",
@@ -48,6 +53,8 @@
     "tailwindcss": "^3.4.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.4",
     "xlsx-populate": "^1.21.0"
   }
 }
