@@ -70,7 +70,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-20 w-64 bg-slate-900 text-slate-100 shadow-xl transition-transform duration-200 ease-in-out lg:static lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none ${
+      className={`fixed inset-y-0 left-0 z-30 w-64 bg-slate-900 text-slate-100 shadow-xl transition-transform duration-200 ease-in-out lg:static lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none ${
         isOpen ? "translate-x-0" : "-translate-x-full"
       }`}
     >
@@ -90,7 +90,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </div>
 
       {/* Menu */}
-      <nav className="h-[calc(100%-5rem)] overflow-y-auto px-3 py-4 space-y-6">
+      <nav className="h-[calc(100%-5rem)] overflow-y-auto px-3 py-4 space-y-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-4">
         {MENU.map((section, si) => (
           <div key={si}>
             {section.title && (

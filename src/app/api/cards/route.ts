@@ -12,29 +12,7 @@ export async function GET() {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-    let monthPrefix = currentMonth;
-
-    // Check if current month has any data
-    const currentMonthCount = sqlite
-      .prepare(
-        `SELECT COUNT(*) as cnt FROM transactions WHERE card_id IS NOT NULL AND date LIKE ?`
-      )
-      .get(`${currentMonth}%`) as { cnt: number };
-
-    if (currentMonthCount.cnt === 0) {
-      // Fallback: find the latest month with card-linked transactions
-      const latestRow = sqlite
-        .prepare(
-          `SELECT SUBSTR(date, 1, 7) as month FROM transactions
-           WHERE card_id IS NOT NULL
-           ORDER BY date DESC LIMIT 1`
-        )
-        .get() as { month: string } | undefined;
-
-      if (latestRow) {
-        monthPrefix = latestRow.month;
-      }
-    }
+    const monthPrefix = currentMonth;
 
     const usageRows = sqlite
       .prepare(
