@@ -64,7 +64,11 @@ if [ "$ok" != "1" ]; then
 fi
 
 echo "== [6/6] 오래된 릴리스 정리 (최근 $KEEP개 유지)"
-ls -1dt releases/*/ 2>/dev/null | tail -n +$((KEEP + 1)) | grep -v "$(basename "$(readlink -f current)")" | xargs -r rm -rf
+CUR="$(basename "$(readlink -f current)")"
+for d in $(ls -1dt releases/*/ 2>/dev/null | tail -n +$((KEEP + 1))); do
+  [ "$(basename "$d")" = "$CUR" ] && continue
+  rm -rf "$d"
+done
 rm -f "$ARTIFACT"
 pm2 save >/dev/null
 echo "OK: $REL"
