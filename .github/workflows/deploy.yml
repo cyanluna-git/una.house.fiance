@@ -25,26 +25,31 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
-      - run: pnpm build
-        env:
-          NEXT_TELEMETRY_DISABLED: "1"
 
       # 기존 실패 2건이 있어 막지 않고 결과만 남긴다.
+      # 테스트가 `next dev`로 .next를 덮어쓰므로 반드시 운영 빌드보다 먼저 실행한다.
       - name: API tests (non-blocking)
         continue-on-error: true
         run: pnpm test:api
 
-      - name: 운영용 의존성만 남기기
+      - name: 운영 빌드 (깨끗한 .next)
         run: |
-          rm -f test.db test.db-shm test.db-wal .test-server.pid
-          pnpm prune --prod
+          rm -rf .next test.db test.db-shm test.db-wal .test-server.pid
+          pnpm build
+          test -f .next/BUILD_ID || { echo ".next/BUILD_ID 없음 — 운영 빌드가 아님"; exit 1; }
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: 운영용 의존성만 남기기
+        run: pnpm prune --prod
 
       - name: 아티팩트 만들기 (DB, .env는 절대 포함하지 않음)
         run: |
           tar -czf /tmp/release.tar.gz \
             --exclude='*.db' --exclude='*.db-shm' --exclude='*.db-wal' --exclude='.env*' --exclude='.next/cache' \
-            .next node_modules public package.json next.config.ts pnpm-lock.yaml ecosystem.config.cjs
+            .next node_modules public package.json next.config.mjs pnpm-lock.yaml ecosystem.config.cjs
           ls -lh /tmp/release.tar.gz
+          tar -tzf /tmp/release.tar.gz | grep -qx '.next/BUILD_ID' || { echo "아티팩트에 BUILD_ID 없음"; exit 1; }
           tar -tzf /tmp/release.tar.gz | grep -E '^(\./)?([^/]+\.db(-wal|-shm)?|\.env[^/]*)$' && { echo "DB/.env가 아티팩트에 포함됨"; exit 1; } || true
 
       - name: SSH 설정

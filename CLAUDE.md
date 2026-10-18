@@ -185,7 +185,7 @@ UI Layer
   src/app/manual/page.tsx    # Manual entry form (salary, insurance, etc.)
 
 Configuration
-  next.config.ts             # Next.js settings
+  next.config.mjs            # Next.js settings (mjs: 운영에서 typescript 없이 로드)
   tsconfig.json              # TypeScript strict mode enabled
   package.json               # Dev server runs on port 3104 (-p flag)
 ```

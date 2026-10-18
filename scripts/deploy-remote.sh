@@ -30,6 +30,7 @@ ls -1t shared/backups/finance-*.db 2>/dev/null | tail -n +31 | xargs -r rm -f
 echo "== [2/6] 릴리스 풀기: $REL"
 mkdir -p "$REL"
 tar -xzf "$ARTIFACT" -C "$REL"
+[ -f "$REL/.next/BUILD_ID" ] || { echo "ERROR: 운영 빌드 아님 (.next/BUILD_ID 없음)"; rm -rf "$REL"; exit 1; }
 ln -sfn "$BASE/shared/.env.production" "$REL/.env.production"
 
 PREV="$(readlink -f current 2>/dev/null || true)"
@@ -42,8 +43,9 @@ echo "== [4/6] PM2 재시작"
 pm2 startOrReload "$BASE/current/ecosystem.config.cjs" --update-env
 
 echo "== [5/6] 헬스 체크"
+sleep 3
 ok=0
-for i in $(seq 1 30); do
+for i in $(seq 1 45); do
   code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/unlock" || true)"
   if [ "$code" = "200" ]; then ok=1; break; fi
   sleep 1
