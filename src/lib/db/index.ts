@@ -335,7 +335,7 @@ const ruleCount = sqlite.prepare("SELECT COUNT(*) as cnt FROM category_rules").g
 if (ruleCount.cnt === 0) {
   const { initialCategoryRules } = require("./seed-rules");
   const insertRule = sqlite.prepare(
-    "INSERT INTO category_rules (keyword, category_l1, category_l2, category_l3, priority) VALUES (?, ?, ?, ?, ?)"
+    "INSERT OR IGNORE INTO category_rules (keyword, category_l1, category_l2, category_l3, priority) VALUES (?, ?, ?, ?, ?)"
   );
   const seedMany = sqlite.transaction((rules: Array<{ keyword: string; categoryL1: string; categoryL2?: string; categoryL3?: string; priority?: number }>) => {
     for (const r of rules) {
