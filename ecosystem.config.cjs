@@ -12,6 +12,9 @@ module.exports = {
         NODE_ENV: "production",
         NEXT_TELEMETRY_DISABLED: "1",
         UNAHOUSE_DB_PATH: "/opt/demos/unahouse-finance/shared/finance.db",
+        // 운영 AI 분류/영수증 분석: Mac mini Ollama (Tailscale 경로, tailscale serve --tcp 11434)
+        AI_BASE_URL: "http://100.112.139.36:11434",
+        AI_TIMEOUT_MS: "120000",
       },
       max_memory_restart: "450M",
       autorestart: true,
