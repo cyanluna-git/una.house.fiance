@@ -118,6 +118,9 @@ export async function POST(request: NextRequest) {
       id: result.lastInsertRowid,
     });
   } catch (error) {
+    if ((error as { code?: string })?.code === "SQLITE_CONSTRAINT_UNIQUE") {
+      return NextResponse.json({ error: "이미 같은 거래가 있습니다" }, { status: 409 });
+    }
     console.error("POST /api/transactions error:", error);
     return NextResponse.json({ error: "저장 실패" , errorId: crypto.randomUUID() }, { status: 500 });
   }

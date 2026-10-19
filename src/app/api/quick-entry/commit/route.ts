@@ -17,6 +17,10 @@ interface CommitEntry {
   note?: string;
   /** 사용자가 중복 경고를 확인하고 그래도 저장하겠다고 한 경우 */
   force?: boolean;
+  /** 영수증 검증 결과 (receipt API 응답 그대로 전달). mismatch/missing이면 amountConfirmed 필요 */
+  receiptCheck?: "ok" | "mismatch" | "missing";
+  /** 사용자가 검토 화면에서 금액을 직접 확인/수정했음 */
+  amountConfirmed?: boolean;
 }
 
 /**
@@ -56,6 +60,10 @@ export async function POST(request: NextRequest) {
       entries.forEach((e, index) => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date || "") || !e.merchant?.trim() || !Number.isInteger(e.amount) || e.amount === 0 || !e.categoryL1) {
           skipped.push({ index, reason: "필수값 누락 또는 형식 오류" });
+          return;
+        }
+        if (e.receiptCheck && e.receiptCheck !== "ok" && !e.amountConfirmed) {
+          skipped.push({ index, reason: "영수증 합계 검증 불일치 — 금액을 확인한 뒤 저장하세요" });
           return;
         }
         const cardCompany = e.cardCompany || "수동입력";

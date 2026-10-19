@@ -154,9 +154,9 @@ describe("TXN-01~10: 수동입력", () => {
     expect(typeof body.id).toBe("number");
   });
 
-  // TXN-05: 동일 body 2회 POST → UNIQUE constraint (date+merchant+amount+cardCompany) 위반 → 500
-  // The route's generic catch block returns 500 { error: "저장 실패" } on SQLite UNIQUE violation.
-  test("TXN-05: 동일 body 2회 POST → 두 번째 500 (UNIQUE constraint)", async () => {
+  // TXN-05: 동일 body 2회 POST → UNIQUE constraint (date+merchant+amount+cardCompany) 위반 → 409
+  // 2026-10-19: 중복은 서버 오류가 아니므로 500 대신 409 { error: "이미 같은 거래가 있습니다" }.
+  test("TXN-05: 동일 body 2회 POST → 두 번째 409 (UNIQUE constraint)", async () => {
     const body: TransactionBody = {
       date: "2025-11-04",
       merchant: "TXN05_중복테스트",
@@ -167,9 +167,9 @@ describe("TXN-01~10: 수동입력", () => {
     const res1 = await postTransaction(cookie, body);
     expect(res1.status).toBe(200);
 
-    // Second identical POST hits UNIQUE(date, merchant, amount, cardCompany) → 500
+    // Second identical POST hits UNIQUE(date, merchant, amount, cardCompany) → 409
     const res2 = await postTransaction(cookie, body);
-    expect(res2.status).toBe(500);
+    expect(res2.status).toBe(409);
     const errBody = await res2.json() as { error: string };
     expect(errBody.error).toBeTruthy();
   });

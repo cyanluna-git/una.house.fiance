@@ -47,6 +47,7 @@ export const MENU: MenuSection[] = [
   {
     title: "데이터 관리",
     items: [
+      { label: "빠른 입력", href: "/quick", icon: "⚡" },
       { label: "임포트", href: "/import", icon: "📁" },
       { label: "수동 입력", href: "/manual", icon: "✏️" },
       { label: "카테고리 규칙", href: "/category-rules", icon: "🏷️" },
@@ -55,6 +56,7 @@ export const MENU: MenuSection[] = [
 ];
 
 export const QUICK_ACTIONS: MenuItem[] = [
+  { label: "빠른 입력", href: "/quick", icon: "⚡" },
   { label: "수동 입력", href: "/manual", icon: "✏️" },
   { label: "거래 내역", href: "/transactions", icon: "💳" },
   { label: "카드 관리", href: "/cards", icon: "🏧" },
