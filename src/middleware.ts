@@ -53,8 +53,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const unlockUrl = request.nextUrl.clone();
-  unlockUrl.pathname = "/unlock";
+  // next start -H 127.0.0.1 뒤(nginx 프록시)에서는 request.nextUrl의 host가 localhost:3104가 된다.
+  // 브라우저가 보낸 Host / X-Forwarded-* 헤더로 공개 주소를 만들어야 리다이렉트가 깨지지 않는다.
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? request.nextUrl.host;
+  const proto =
+    request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
+  const unlockUrl = new URL(`${proto}://${host}/unlock`);
   unlockUrl.searchParams.set("next", `${pathname}${search}`);
   return NextResponse.redirect(unlockUrl);
 }
