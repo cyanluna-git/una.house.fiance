@@ -1,5 +1,6 @@
 "use client";
 
+import Money from "@/components/Money";
 import React, { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type { Trip, TripTransaction } from "@/types";
@@ -198,13 +199,13 @@ export default function TripsPage() {
         <div className="bg-white rounded-xl shadow p-4 border-l-4 border-emerald-500">
           <div className="text-sm text-slate-500">총 예산</div>
           <div className="text-xl font-bold text-slate-800">
-            {totalBudget.toLocaleString()}원
+            <Money value={totalBudget} />
           </div>
         </div>
         <div className="bg-white rounded-xl shadow p-4 border-l-4 border-amber-500">
           <div className="text-sm text-slate-500">총 지출</div>
           <div className="text-xl font-bold text-slate-800">
-            {totalExpense.toLocaleString()}원
+            <Money value={totalExpense} />
           </div>
         </div>
       </div>
@@ -285,7 +286,7 @@ export default function TripsPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-semibold text-slate-700">
-                      {trip.totalExpense.toLocaleString()}원
+                      <Money value={trip.totalExpense} />
                     </div>
                     <div className="text-xs text-slate-500">
                       {trip.transactionCount}건
@@ -463,7 +464,7 @@ export default function TripsPage() {
                     {tx.merchant}
                   </td>
                   <td className="px-4 py-2 text-right font-medium">
-                    {tx.amount.toLocaleString()}원
+                    <Money value={tx.amount} />
                   </td>
                 </tr>
               ))}

@@ -1,5 +1,6 @@
 "use client";
 
+import Money from "@/components/Money";
 import React, { useState, useEffect, useCallback } from "react";
 
 const LOAN_TYPES = ["장기주택", "차량", "학자금", "신용", "마이너스", "기타"];
@@ -591,15 +592,15 @@ export default function LoansPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className="bg-gradient-to-r from-slate-700 to-slate-800 rounded-lg shadow p-5 text-white">
               <p className="text-sm opacity-80">총 대출 원금</p>
-              <p className="text-2xl font-bold mt-1">{totalOriginal.toLocaleString()}원</p>
+              <p className="text-2xl font-bold mt-1"><Money value={totalOriginal} /></p>
             </div>
             <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg shadow p-5 text-white">
               <p className="text-sm opacity-80">잔여 원금</p>
-              <p className="text-2xl font-bold mt-1">{totalOutstanding.toLocaleString()}원</p>
+              <p className="text-2xl font-bold mt-1"><Money value={totalOutstanding} /></p>
             </div>
             <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-lg shadow p-5 text-white">
               <p className="text-sm opacity-80">월 총 상환액</p>
-              <p className="text-2xl font-bold mt-1">{totalMonthly.toLocaleString()}원</p>
+              <p className="text-2xl font-bold mt-1"><Money value={totalMonthly} /></p>
             </div>
           </div>
         )}
@@ -704,7 +705,7 @@ export default function LoansPage() {
                         <div className="text-right">
                           <div className="text-xs text-slate-500">{loan.interest_rate}% {loan.rate_type}</div>
                           <div className="font-medium text-slate-900">
-                            {loan.outstanding_amount.toLocaleString()}원
+                            <Money value={loan.outstanding_amount} />
                           </div>
                         </div>
                         {/* Repayment progress */}
@@ -735,11 +736,11 @@ export default function LoansPage() {
                           )}
                           <div>
                             <span className="text-slate-500">대출 원금</span>
-                            <p className="font-medium">{loan.original_amount.toLocaleString()}원</p>
+                            <p className="font-medium"><Money value={loan.original_amount} /></p>
                           </div>
                           <div>
                             <span className="text-slate-500">잔여 원금</span>
-                            <p className="font-medium text-red-600">{loan.outstanding_amount.toLocaleString()}원</p>
+                            <p className="font-medium text-red-600"><Money value={loan.outstanding_amount} /></p>
                           </div>
                           {loan.repay_institution && (
                             <div>
@@ -768,7 +769,7 @@ export default function LoansPage() {
                           {loan.monthly_payment && (
                             <div>
                               <span className="text-slate-500">월 상환액</span>
-                              <p className="font-medium">{loan.monthly_payment.toLocaleString()}원</p>
+                              <p className="font-medium"><Money value={loan.monthly_payment} /></p>
                             </div>
                           )}
                           {loan.payment_day && (
@@ -853,7 +854,7 @@ export default function LoansPage() {
                                     >
                                       <span className="text-slate-500">{txn.date}</span>
                                       <span className="font-medium">{txn.merchant}</span>
-                                      <span className="text-blue-700">{txn.amount.toLocaleString()}원</span>
+                                      <span className="text-blue-700"><Money value={txn.amount} /></span>
                                       <span className="text-xs text-blue-500">등록?</span>
                                     </button>
                                   ))}
@@ -957,16 +958,16 @@ export default function LoansPage() {
                                       <tr key={r.id} className="hover:bg-slate-50">
                                         <td className="px-3 py-2 text-slate-700">{r.date}</td>
                                         <td className="px-3 py-2 text-right text-slate-900">
-                                          {r.principalAmount.toLocaleString()}원
+                                          <Money value={r.principalAmount} />
                                         </td>
                                         <td className="px-3 py-2 text-right text-slate-600">
-                                          {r.interestAmount.toLocaleString()}원
+                                          <Money value={r.interestAmount} />
                                         </td>
                                         <td className="px-3 py-2 text-right font-medium text-slate-900">
                                           {(r.principalAmount + r.interestAmount).toLocaleString()}원
                                         </td>
                                         <td className="px-3 py-2 text-right font-medium text-red-600">
-                                          {r.remainingPrincipal.toLocaleString()}원
+                                          <Money value={r.remainingPrincipal} />
                                         </td>
                                         <td className="px-3 py-2 text-slate-500 max-w-[150px] truncate">
                                           {r.memo || "-"}
@@ -1053,16 +1054,16 @@ export default function LoansPage() {
                                           <td className="px-3 py-1.5 text-slate-700">{row.month}</td>
                                           <td className="px-3 py-1.5 text-slate-700">{row.date}</td>
                                           <td className="px-3 py-1.5 text-right text-slate-900">
-                                            {row.payment.toLocaleString()}원
+                                            <Money value={row.payment} />
                                           </td>
                                           <td className="px-3 py-1.5 text-right text-slate-900">
-                                            {row.principal.toLocaleString()}원
+                                            <Money value={row.principal} />
                                           </td>
                                           <td className="px-3 py-1.5 text-right text-slate-600">
-                                            {row.interest.toLocaleString()}원
+                                            <Money value={row.interest} />
                                           </td>
                                           <td className="px-3 py-1.5 text-right font-medium text-purple-700">
-                                            {row.remaining.toLocaleString()}원
+                                            <Money value={row.remaining} />
                                           </td>
                                         </tr>
                                       ))}

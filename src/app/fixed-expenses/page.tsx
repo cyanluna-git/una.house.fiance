@@ -1,5 +1,6 @@
 "use client";
 
+import Money from "@/components/Money";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { calcMonthlyAmount } from "@/lib/fixed-expense-calc";
 import type { FixedExpense, FamilyMember } from "@/types";
@@ -468,7 +469,7 @@ export default function FixedExpensesPage() {
             </div>
             <div className="text-right">
               <div className="text-sm font-bold text-slate-800">
-                {expense.amount.toLocaleString()}원
+                <Money value={expense.amount} />
                 <span className="text-xs font-normal text-slate-500">
                   /{(expense.frequency ?? "monthly") === "monthly" ? "월" :
                     (expense.frequency ?? "monthly") === "daily" ? "일" :
@@ -477,7 +478,7 @@ export default function FixedExpensesPage() {
               </div>
               {(expense.frequency ?? "monthly") !== "monthly" && (
                 <div className="text-xs text-blue-600">
-                  이번달: {currentMonthAmount.toLocaleString()}원
+                  이번달: <Money value={currentMonthAmount} />
                 </div>
               )}
               <div className="text-xs text-slate-500">
@@ -524,7 +525,7 @@ export default function FixedExpensesPage() {
                   <div><span className="text-slate-500">종료일:</span> {expense.endDate || "없음 (진행중)"}</div>
                   <div><span className="text-slate-500">귀속:</span> {memberName || "가계 공통"}</div>
                   {(expense.frequency ?? "monthly") !== "monthly" && (
-                    <div><span className="text-slate-500">이번달:</span> {currentMonthAmount.toLocaleString()}원</div>
+                    <div><span className="text-slate-500">이번달:</span> <Money value={currentMonthAmount} /></div>
                   )}
                 </div>
                 {expense.note && (
@@ -574,7 +575,7 @@ export default function FixedExpensesPage() {
         </div>
         <div className="bg-white rounded-xl shadow p-4 border-l-4 border-red-500">
           <div className="text-sm text-slate-500">월 고정지출 합계 (이번달)</div>
-          <div className="text-xl font-bold text-slate-800">{monthlyTotal.toLocaleString()}원</div>
+          <div className="text-xl font-bold text-slate-800"><Money value={monthlyTotal} /></div>
         </div>
         <div className="bg-white rounded-xl shadow p-4 border-l-4 border-slate-400">
           <div className="text-sm text-slate-500">종료된 항목</div>

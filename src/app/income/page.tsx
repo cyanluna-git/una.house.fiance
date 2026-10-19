@@ -269,14 +269,14 @@ export default function IncomePage() {
                                       {item.name}
                                     </span>
                                     <span className="font-medium text-slate-900">
-                                      {item.amount.toLocaleString()}원
+                                      <Money value={item.amount} />
                                     </span>
                                   </div>
                                 ))}
                                 <div className="flex justify-between text-sm font-semibold border-t pt-1 mt-2">
                                   <span>합계</span>
                                   <span>
-                                    {stmt.gross_pay.toLocaleString()}원
+                                    <Money value={stmt.gross_pay} />
                                   </span>
                                 </div>
                               </div>
@@ -303,14 +303,14 @@ export default function IncomePage() {
                                       {item.name}
                                     </span>
                                     <span className="font-medium text-red-600">
-                                      -{item.amount.toLocaleString()}원
+                                      <Money value={item.amount} sign="minus" />
                                     </span>
                                   </div>
                                 ))}
                                 <div className="flex justify-between text-sm font-semibold border-t pt-1 mt-2 text-red-700">
                                   <span>합계</span>
                                   <span>
-                                    -{stmt.total_deductions.toLocaleString()}원
+                                    <Money value={stmt.total_deductions} sign="minus" />
                                   </span>
                                 </div>
                               </div>

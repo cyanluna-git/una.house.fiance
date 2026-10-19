@@ -15,7 +15,8 @@
     "verify:aggregation": "tsx scripts/verify-aggregation-month.ts",
     "test:e2e": "playwright test",
     "test:api": "vitest run tests/api",
-    "test:all": "pnpm test:api && pnpm test:e2e"
+    "test:all": "pnpm test:api && pnpm test:e2e",
+    "test:layout": "playwright test -c playwright.layout.config.ts"
   },
   "dependencies": {
     "better-sqlite3": "latest",

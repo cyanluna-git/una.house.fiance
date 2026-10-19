@@ -1,5 +1,6 @@
 "use client";
 
+import Money from "@/components/Money";
 import { useState, useEffect, useCallback } from "react";
 import { getL1Categories, getL2Categories, getL3Categories } from "@/lib/categories";
 import type { Transaction, CardInfo, FamilyMember, TripRef } from "@/types";
@@ -162,7 +163,7 @@ export default function TransactionsPage() {
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 시작 날짜
@@ -263,7 +264,7 @@ export default function TransactionsPage() {
             <div className="p-8 text-center text-slate-600">거래 내역이 없습니다</div>
           ) : (
             <>
-              <div className="md:hidden">
+              <div className="lg:hidden">
                 <div className="divide-y">
                   {transactions.map((tx) => {
                     const isEditing = editingId === tx.id;
@@ -279,7 +280,7 @@ export default function TransactionsPage() {
                             <div className="text-xs text-slate-500">{display.company}</div>
                           </div>
                           <div className="text-sm font-bold text-slate-900 whitespace-nowrap">
-                            {tx.amount.toLocaleString()}원
+                            <Money value={tx.amount} />
                           </div>
                         </div>
 
@@ -454,13 +455,13 @@ export default function TransactionsPage() {
                             <div className="flex gap-2 pt-1">
                               <button
                                 onClick={handleSave}
-                                className="px-3 py-2 text-sm font-semibold text-emerald-700 bg-emerald-50 rounded-lg"
+                                className="min-h-[44px] flex-1 px-3 py-2 text-sm font-semibold text-emerald-700 bg-emerald-50 rounded-lg"
                               >
                                 저장
                               </button>
                               <button
                                 onClick={() => setEditingId(null)}
-                                className="px-3 py-2 text-sm font-semibold text-slate-600 bg-slate-50 rounded-lg"
+                                className="min-h-[44px] flex-1 px-3 py-2 text-sm font-semibold text-slate-600 bg-slate-50 rounded-lg"
                               >
                                 취소
                               </button>
@@ -498,13 +499,13 @@ export default function TransactionsPage() {
                             <div className="w-full mt-1 border-t pt-3 flex justify-end gap-2 text-sm">
                               <button
                                 onClick={() => handleEdit(tx)}
-                                className="px-2.5 py-1.5 rounded bg-blue-600 text-white"
+                                className="min-h-[40px] px-4 rounded bg-blue-600 text-white"
                               >
                                 편집
                               </button>
                               <button
                                 onClick={() => handleDelete(tx.id)}
-                                className="px-2.5 py-1.5 rounded bg-red-50 text-red-700"
+                                className="min-h-[40px] px-4 rounded bg-red-50 text-red-700"
                               >
                                 삭제
                               </button>
@@ -517,7 +518,7 @@ export default function TransactionsPage() {
                 </div>
               </div>
 
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-100 border-b">
                     <tr>
@@ -592,7 +593,7 @@ export default function TransactionsPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-right font-medium">
-                          {tx.amount.toLocaleString()}원
+                          <Money value={tx.amount} />
                         </td>
                         <td className="px-4 py-3">
                           {editingId === tx.id ? (
@@ -804,21 +805,21 @@ export default function TransactionsPage() {
               </div>
 
               <div className="px-4 py-4 bg-slate-50 border-t flex justify-between items-center">
-                <span className="text-sm text-slate-600">
+                <span className="min-w-0 text-sm text-slate-600">
                   전체 {total}건 (페이지 {page}/{totalPages})
                 </span>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPage(Math.max(1, page - 1))}
                     disabled={page === 1}
-                    className="px-3 py-1 border border-slate-300 rounded disabled:opacity-50"
+                    className="min-h-[40px] whitespace-nowrap px-4 border border-slate-300 rounded disabled:opacity-50"
                   >
                     이전
                   </button>
                   <button
                     onClick={() => setPage(Math.min(totalPages, page + 1))}
                     disabled={page === totalPages}
-                    className="px-3 py-1 border border-slate-300 rounded disabled:opacity-50"
+                    className="min-h-[40px] whitespace-nowrap px-4 border border-slate-300 rounded disabled:opacity-50"
                   >
                     다음
                   </button>

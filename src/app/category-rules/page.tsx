@@ -317,7 +317,7 @@ export default function CategoryRulesPage() {
             <h3 className="text-sm font-semibold text-emerald-800 mb-3">
               새 규칙 추가
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
               <FormField label="키워드">
                 <input
                   type="text"
@@ -367,7 +367,81 @@ export default function CategoryRulesPage() {
           ) : rules.length === 0 ? (
             <EmptyState message="규칙이 없습니다" />
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* 폰/태블릿: 카드 목록 */}
+            <ul className="divide-y lg:hidden">
+              {rules.map((rule) => (
+                <li key={rule.id} className="p-4">
+                  {editingId === rule.id ? (
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={editData.keyword || ""}
+                        onChange={(e) => setEditData(prev => ({ ...prev, keyword: e.target.value }))}
+                        className="w-full min-h-[44px] px-3 py-2 border border-slate-300 rounded text-sm"
+                        aria-label="키워드"
+                      />
+                      {renderCategorySelectors(
+                        {
+                          categoryL1: editData.categoryL1 || "기타",
+                          categoryL2: editData.categoryL2 || "",
+                          categoryL3: editData.categoryL3 || "",
+                        },
+                        (updates) => setEditData(prev => ({ ...prev, ...updates }))
+                      )}
+                      <label className="flex items-center gap-2 text-sm text-slate-600">
+                        우선순위
+                        <input
+                          type="number"
+                          value={editData.priority ?? 0}
+                          onChange={(e) => setEditData(prev => ({ ...prev, priority: Number(e.target.value) }))}
+                          className="w-20 min-h-[44px] px-2 py-1 border border-slate-300 rounded text-center"
+                          min={0}
+                          max={20}
+                        />
+                      </label>
+                      <div className="flex gap-2">
+                        <Button variant="primary" onClick={handleSave} className="min-h-[44px] flex-1">저장</Button>
+                        <Button variant="secondary" onClick={() => setEditingId(null)} className="min-h-[44px] flex-1">취소</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate font-mono text-sm font-medium text-slate-900">{rule.keyword}</div>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                          <span className="whitespace-nowrap rounded bg-blue-100 px-2 py-0.5 font-medium text-blue-700">{rule.categoryL1}</span>
+                          {rule.categoryL2 && <span className="whitespace-nowrap text-slate-600">{rule.categoryL2}</span>}
+                          {rule.categoryL3 && <span className="whitespace-nowrap text-slate-400">· {rule.categoryL3}</span>}
+                          <span className="whitespace-nowrap text-slate-400">· 우선순위 {rule.priority}</span>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(rule)}
+                          aria-label={`${rule.keyword} 편집`}
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-blue-50 text-blue-700"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(rule.id)}
+                          aria-label={`${rule.keyword} 삭제`}
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-red-50 text-red-600"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            {/* 데스크톱: 표 */}
+            <div className="hidden overflow-x-auto lg:block">
               <table className="w-full text-sm">
                 <thead className="bg-slate-100 border-b">
                   <tr>
@@ -516,6 +590,7 @@ export default function CategoryRulesPage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </div>

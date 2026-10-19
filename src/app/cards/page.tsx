@@ -1,5 +1,6 @@
 "use client";
 
+import Money from "@/components/Money";
 import React, { useState, useEffect, useCallback } from "react";
 import type { Card, FamilyMember } from "@/types";
 import { Button, Badge, FormField, ErrorBanner, EmptyState, CARD_COMPANY_COLORS } from "@/components";
@@ -246,7 +247,7 @@ export default function CardsPage() {
         <div className="flex justify-between text-xs text-slate-500 mb-1">
           <span>실적</span>
           <span>
-            {usage.toLocaleString()} / {target.toLocaleString()}원 ({Math.round(pct)}%)
+            {usage.toLocaleString()} / <Money value={target} /> ({Math.round(pct)}%)
           </span>
         </div>
         <div className="w-full bg-slate-200 rounded-full h-2">
@@ -419,11 +420,11 @@ export default function CardsPage() {
           }
           aria-expanded={expandedId === card.id}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
               <Badge label={card.cardCompany} colorMap={CARD_COMPANY_COLORS} />
-              <div>
-                <div className="font-semibold text-slate-800">
+              <div className="min-w-0">
+                <div className="truncate font-semibold text-slate-800">
                   {card.cardName}
                   {card.cardNumber && (
                     <span className="text-slate-400 font-normal ml-1">
@@ -439,13 +440,13 @@ export default function CardsPage() {
                 </div>
               </div>
             </div>
-            <div className="text-right min-w-[140px]">
+            <div className="flex items-baseline justify-between gap-3 sm:block sm:min-w-[140px] sm:text-right">
               <div className="text-sm font-bold text-slate-800">
-                {usageMonthLabel} {card.monthlyUsage.toLocaleString()}원
+                {usageMonthLabel} <Money value={card.monthlyUsage} />
               </div>
               {!isInactive && card.monthlyTarget && (
                 <div className="text-xs text-slate-500">
-                  실적 {card.monthlyTarget.toLocaleString()}원 기준
+                  실적 <Money value={card.monthlyTarget} /> 기준
                 </div>
               )}
               {isInactive && (
@@ -588,13 +589,13 @@ export default function CardsPage() {
         <div className="bg-white rounded-xl shadow p-4 border-l-4 border-amber-500">
           <div className="text-sm text-slate-500">총 연회비</div>
           <div className="text-xl font-bold text-slate-800">
-            {totalAnnualFee.toLocaleString()}원/년
+            <Money value={totalAnnualFee} />/년
           </div>
         </div>
         <div className="bg-white rounded-xl shadow p-4 border-l-4 border-emerald-500">
           <div className="text-sm text-slate-500">{usageMonthLabel} 총 사용</div>
           <div className="text-xl font-bold text-slate-800">
-            {totalMonthlyUsage.toLocaleString()}원
+            <Money value={totalMonthlyUsage} />
           </div>
         </div>
       </div>

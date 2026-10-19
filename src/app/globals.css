@@ -53,6 +53,11 @@ button {
   font-size: inherit;
 }
 
+/* 표 머리글은 줄바꿈하지 않는다 (좁은 화면에서 '우선순위'가 두 줄로 꺾임) */
+th {
+  white-space: nowrap;
+}
+
 @layer utilities {
   .container-md {
     @apply max-w-4xl mx-auto;

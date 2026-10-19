@@ -1,5 +1,6 @@
 'use client';
 
+import Money from "@/components/Money";
 import { Fragment, useEffect, useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -165,8 +166,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* ===== MOBILE HERO (md:hidden) ===== */}
-        <div className="md:hidden space-y-4">
+        {/* ===== MOBILE HERO (lg:hidden) ===== */}
+        <div className="lg:hidden space-y-4">
           {/* Month selector - mobile */}
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-slate-900">대시보드</h1>
@@ -190,7 +191,7 @@ export default function Home() {
           {/* Gradient hero card: current spend + MoM pill */}
           <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 text-white shadow-lg">
             <p className="text-sm opacity-80">순수 가계지출</p>
-            <p className="whitespace-nowrap tabular-nums text-3xl font-bold mt-1">{dashData.pureHouseholdSpend.toLocaleString()}원</p>
+            <p className="whitespace-nowrap tabular-nums text-3xl font-bold mt-1"><Money value={dashData.pureHouseholdSpend} /></p>
             {dashData.momChange && (
               <span
                 className={`inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -246,7 +247,7 @@ export default function Home() {
                     <div key={cat.categoryL1}>
                       <div className="flex items-center justify-between text-sm mb-1">
                         <span className="font-medium text-slate-800">{cat.categoryL1}</span>
-                        <span className="text-slate-500">{cat.amount.toLocaleString()}원 ({pct}%)</span>
+                        <span className="text-slate-500"><Money value={cat.amount} /> ({pct}%)</span>
                       </div>
                       <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
                         <div
@@ -305,7 +306,7 @@ export default function Home() {
         {/* ===== END MOBILE HERO ===== */}
 
         {/* ===== DESKTOP CONTENT (hidden on mobile) ===== */}
-        <div className="hidden md:block">
+        <div className="hidden lg:block">
         {/* Header with Month Selector */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
@@ -336,12 +337,12 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg shadow p-5 text-white">
             <p className="text-sm opacity-80">총 수입 (실수령)</p>
-            <p className="whitespace-nowrap tabular-nums text-2xl font-bold mt-1">{dashData.incomeTotal.toLocaleString()}원</p>
+            <p className="whitespace-nowrap tabular-nums text-2xl font-bold mt-1"><Money value={dashData.incomeTotal} /></p>
           </div>
 
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow p-5 text-white">
             <p className="text-sm opacity-80">순수 가계지출</p>
-            <p className="whitespace-nowrap tabular-nums text-2xl font-bold mt-1">{dashData.pureHouseholdSpend.toLocaleString()}원</p>
+            <p className="whitespace-nowrap tabular-nums text-2xl font-bold mt-1"><Money value={dashData.pureHouseholdSpend} /></p>
             <p className="text-xs opacity-70 mt-1">회사경비 제외</p>
           </div>
 
@@ -385,23 +386,23 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow p-5 border border-slate-200">
             <p className="text-sm text-slate-500">총 지출</p>
-            <p className="whitespace-nowrap tabular-nums text-xl font-bold text-slate-900 mt-1">{dashData.totalSpend.toLocaleString()}원</p>
+            <p className="whitespace-nowrap tabular-nums text-xl font-bold text-slate-900 mt-1"><Money value={dashData.totalSpend} /></p>
           </div>
 
           <div className="bg-white rounded-lg shadow p-5 border border-slate-200">
             <p className="text-sm text-slate-500">고정지출 (월)</p>
-            <p className="whitespace-nowrap tabular-nums text-xl font-bold text-slate-900 mt-1">{dashData.fixedExpenseMonthly.toLocaleString()}원</p>
+            <p className="whitespace-nowrap tabular-nums text-xl font-bold text-slate-900 mt-1"><Money value={dashData.fixedExpenseMonthly} /></p>
           </div>
 
           <div className="bg-white rounded-lg shadow p-5 border border-slate-200">
             <p className="text-sm text-slate-500">회사경비</p>
-            <p className="whitespace-nowrap tabular-nums text-xl font-bold text-violet-600 mt-1">{dashData.companyExpenseTotal.toLocaleString()}원</p>
+            <p className="whitespace-nowrap tabular-nums text-xl font-bold text-violet-600 mt-1"><Money value={dashData.companyExpenseTotal} /></p>
           </div>
 
           <div className="bg-white rounded-lg shadow p-5 border border-slate-200">
             <p className="text-sm text-slate-500">세전 급여</p>
-            <p className="whitespace-nowrap tabular-nums text-xl font-bold text-slate-900 mt-1">{dashData.grossIncome.toLocaleString()}원</p>
-            <p className="text-xs text-slate-400 mt-1">공제 {dashData.totalDeductions.toLocaleString()}원</p>
+            <p className="whitespace-nowrap tabular-nums text-xl font-bold text-slate-900 mt-1"><Money value={dashData.grossIncome} /></p>
+            <p className="text-xs text-slate-400 mt-1">공제 <Money value={dashData.totalDeductions} /></p>
           </div>
         </div>
 
@@ -481,7 +482,7 @@ export default function Home() {
                               }
                             }}
                           >
-                            {detail.amount.toLocaleString()}원
+                            <Money value={detail.amount} />
                           </td>
                           <td className="py-3 px-4 text-right text-slate-600">
                             {dashData.totalSpend > 0
@@ -507,7 +508,7 @@ export default function Home() {
                               <td className="py-2 px-4 pl-12 text-slate-500">└ {l2.categoryL2}</td>
                               <td className="py-2 px-4 text-right text-slate-400">{l2.count}건</td>
                               <td className="py-2 px-4 text-right text-slate-500">
-                                {l2.amount.toLocaleString()}원
+                                <Money value={l2.amount} />
                               </td>
                               <td className="py-2 px-4 text-right text-slate-400">
                                 {detail.amount > 0
@@ -524,7 +525,7 @@ export default function Home() {
                     <td className="py-3 px-4 text-slate-900">합계</td>
                     <td className="py-3 px-4 text-right text-slate-900">{dashData.totalCount}건</td>
                     <td className="py-3 px-4 text-right text-slate-900">
-                      {dashData.totalSpend.toLocaleString()}원
+                      <Money value={dashData.totalSpend} />
                     </td>
                     <td className="py-3 px-4 text-right text-slate-600">100%</td>
                   </tr>
@@ -613,7 +614,7 @@ export default function Home() {
                         <td className="py-2 pr-2 text-slate-400 text-xs whitespace-nowrap">{tx.cardCompany}</td>
                         <td className="py-2 pr-2 text-slate-800 truncate max-w-[200px]">{tx.merchant}</td>
                         <td className="py-2 text-right font-medium text-slate-900 whitespace-nowrap">
-                          {Math.abs(tx.amount).toLocaleString()}원
+                          <Money value={Math.abs(tx.amount)} />
                         </td>
                       </tr>
                     ))}

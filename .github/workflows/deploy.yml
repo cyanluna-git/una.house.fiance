@@ -40,6 +40,17 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: "1"
 
+      # 모바일/태블릿 레이아웃 회귀 검사 (실패하면 배포 중단). 빈 test.db로 운영 빌드를 띄워 검사한다.
+      - name: 브라우저 설치 (chromium)
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: 레이아웃 검사 (화면 14개 × 뷰포트 5개)
+        run: |
+          pnpm test:layout
+          rm -f test.db test.db-shm test.db-wal
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
       - name: 운영용 의존성만 남기기
         run: pnpm prune --prod
 
