@@ -10,6 +10,7 @@ SHA="${2:?git sha required}"
 BASE=/opt/demos/unahouse-finance
 APP=unahouse-finance
 PORT=3104
+PUBLIC_HOST=unahouse.cyanluna.com
 KEEP=5
 TS="$(date +%Y%m%d-%H%M%S)"
 REL="$BASE/releases/$TS-${SHA:0:7}"
@@ -50,6 +51,19 @@ for i in $(seq 1 45); do
   if [ "$code" = "200" ]; then ok=1; break; fi
   sleep 1
 done
+
+# 무쿠키 리다이렉트 검사: nginx와 같은 헤더로 보호 페이지를 열면
+# 공개 도메인의 /unlock 으로 보내야 한다 (2026-10-19 localhost:3104 리다이렉트 장애 재발 방지)
+if [ "$ok" = "1" ]; then
+  loc="$(curl -s -o /dev/null -w '%{redirect_url}' \
+    -H "Host: $PUBLIC_HOST" -H "X-Forwarded-Proto: https" \
+    "http://127.0.0.1:$PORT/quick" || true)"
+  echo "리다이렉트: $loc"
+  case "$loc" in
+    "https://$PUBLIC_HOST/unlock?next="*) ;;
+    *) echo "ERROR: 무쿠키 리다이렉트가 공개 도메인이 아닙니다"; ok=0; code="redirect" ;;
+  esac
+fi
 
 if [ "$ok" != "1" ]; then
   echo "ERROR: 헬스 체크 실패 (마지막 HTTP $code). 롤백합니다."

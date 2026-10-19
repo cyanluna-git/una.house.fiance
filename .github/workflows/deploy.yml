@@ -78,3 +78,6 @@ jobs:
             sleep 3
           done
           exit 1
+
+      - name: 공개 URL 스모크 (무쿠키 리다이렉트)
+        run: bash scripts/smoke-public.sh https://unahouse.cyanluna.com
