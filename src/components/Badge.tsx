@@ -72,7 +72,7 @@ export default function Badge({
   const resolvedColor = color ?? colorMap?.[label] ?? DEFAULT_COLOR;
 
   return (
-    <span className={`${SHAPE_CLASSES[shape]} ${SIZE_CLASSES[size]} ${resolvedColor}`}>
+    <span className={`whitespace-nowrap ${SHAPE_CLASSES[shape]} ${SIZE_CLASSES[size]} ${resolvedColor}`}>
       {label}
     </span>
   );

@@ -88,7 +88,7 @@ export default function AnalyticsSummaryCards({
           className="bg-white rounded-lg shadow p-4"
         >
           <p className="text-xs text-slate-500 mb-1">{card.label}</p>
-          <p className={`text-lg font-bold ${card.color ?? "text-slate-900"}`}>
+          <p className={`whitespace-nowrap tabular-nums text-base font-bold sm:text-lg ${card.color ?? "text-slate-900"}`}>
             {card.value}
           </p>
         </div>

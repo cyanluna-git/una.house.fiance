@@ -389,7 +389,7 @@ export default function CategoryRulesPage() {
                     <th className="px-4 py-3 text-center font-semibold w-20">
                       우선순위
                     </th>
-                    <th className="px-4 py-3 text-center font-semibold w-24">
+                    <th className="px-4 py-3 text-center font-semibold w-32 whitespace-nowrap">
                       작업
                     </th>
                   </tr>
@@ -449,7 +449,7 @@ export default function CategoryRulesPage() {
                           </td>
                         </>
                       )}
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-4 py-2 text-center whitespace-nowrap">
                         {editingId === rule.id ? (
                           <input
                             type="number"
@@ -470,7 +470,7 @@ export default function CategoryRulesPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-4 py-2 text-center whitespace-nowrap">
                         {editingId === rule.id ? (
                           <>
                             <Button

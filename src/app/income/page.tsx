@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Money from "@/components/Money";
 
 interface SalaryItemData {
   id: number;
@@ -193,40 +194,37 @@ export default function IncomePage() {
                       onClick={() =>
                         setExpandedId(isExpanded ? null : stmt.id)
                       }
-                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition text-left"
+                      className="w-full px-4 py-3 flex flex-col gap-2 hover:bg-slate-50 transition text-left sm:px-6 sm:py-4 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <div className="flex items-center gap-6">
-                        <div>
-                          <span className="text-lg font-semibold text-slate-900">
+                      <div className="flex min-w-0 items-center justify-between gap-3 sm:justify-start">
+                        <div className="min-w-0">
+                          <span className="whitespace-nowrap text-base font-semibold text-slate-900 sm:text-lg">
                             {stmt.pay_date}
                           </span>
                           {stmt.company_name && (
-                            <span className="ml-3 text-sm text-slate-500">
+                            <span className="block truncate text-sm text-slate-500 sm:ml-3 sm:inline">
                               {stmt.company_name}
                             </span>
                           )}
                         </div>
+                        <span className="text-slate-400 text-lg sm:hidden">
+                          {isExpanded ? "▲" : "▼"}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
+                      <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-6">
+                        <div className="sm:text-right">
                           <div className="text-xs text-slate-500">세전</div>
-                          <div className="font-medium text-slate-700">
-                            {stmt.gross_pay.toLocaleString()}원
-                          </div>
+                          <Money value={stmt.gross_pay} className="text-sm font-medium text-slate-700 sm:text-base" />
                         </div>
-                        <div className="text-right">
+                        <div className="sm:text-right">
                           <div className="text-xs text-slate-500">공제</div>
-                          <div className="font-medium text-red-600">
-                            -{stmt.total_deductions.toLocaleString()}원
-                          </div>
+                          <Money value={stmt.total_deductions} sign="minus" className="text-sm font-medium text-red-600 sm:text-base" />
                         </div>
                         <div className="text-right">
                           <div className="text-xs text-slate-500">실수령</div>
-                          <div className="text-lg font-bold text-blue-600">
-                            {stmt.net_pay.toLocaleString()}원
-                          </div>
+                          <Money value={stmt.net_pay} className="text-sm font-bold text-blue-600 sm:text-lg" />
                         </div>
-                        <span className="text-slate-400 text-lg">
+                        <span className="hidden text-slate-400 text-lg sm:inline">
                           {isExpanded ? "▲" : "▼"}
                         </span>
                       </div>

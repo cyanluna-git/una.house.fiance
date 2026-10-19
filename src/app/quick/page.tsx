@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { getL2Categories, getL3Categories } from "@/lib/categories";
 import QuickCategoryPicker from "@/components/QuickCategoryPicker";
 import Button from "@/components/Button";
@@ -215,7 +216,12 @@ export default function QuickEntryPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-4">
-      <h1 className="text-xl font-bold">⚡ 빠른 입력</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl font-bold">⚡ 빠른 입력</h1>
+        <Link href="/manual" className="whitespace-nowrap text-sm text-blue-600 underline-offset-2 hover:underline">
+          직접 입력(수동) →
+        </Link>
+      </div>
 
       <div className="flex gap-2">
         {(["text", "receipt"] as const).map((t) => (
@@ -340,21 +346,21 @@ function EntryCard({
             <div className="space-y-2 pt-2">
               <div className="grid grid-cols-2 gap-2">
                 <label className="text-xs">날짜
-                  <input type="date" value={e.date} onChange={(ev) => onChange({ date: ev.target.value })} className="mt-1 w-full rounded border p-1" />
+                  <input type="date" value={e.date} onChange={(ev) => onChange({ date: ev.target.value })} className="mt-1 w-full min-h-[40px] rounded border px-2 py-1" />
                 </label>
                 <label className="text-xs">금액
                   <input
                     type="number"
                     value={e.amount ?? ""}
                     onChange={(ev) => onChange({ amount: ev.target.value === "" ? null : Number(ev.target.value), amountConfirmed: true })}
-                    className="mt-1 w-full rounded border p-1"
+                    className="mt-1 w-full min-h-[40px] rounded border px-2 py-1"
                   />
                 </label>
                 <label className="text-xs">가맹점
-                  <input value={e.merchant} onChange={(ev) => onChange({ merchant: ev.target.value })} className="mt-1 w-full rounded border p-1" />
+                  <input value={e.merchant} onChange={(ev) => onChange({ merchant: ev.target.value })} className="mt-1 w-full min-h-[40px] rounded border px-2 py-1" />
                 </label>
                 <label className="text-xs">카드
-                  <select value={e.cardCompany ?? "수동입력"} onChange={(ev) => onChange({ cardCompany: ev.target.value })} className="mt-1 w-full rounded border p-1">
+                  <select value={e.cardCompany ?? "수동입력"} onChange={(ev) => onChange({ cardCompany: ev.target.value })} className="mt-1 w-full min-h-[40px] rounded border px-2 py-1">
                     {CARD_COMPANIES.map((c) => <option key={c}>{c}</option>)}
                   </select>
                 </label>
@@ -367,7 +373,7 @@ function EntryCard({
                 onSelectL2={(l2) => onChange({ categoryL2: l2, categoryL3: "" })}
               />
               {l3s.length > 0 && (
-                <select value={e.categoryL3} onChange={(ev) => onChange({ categoryL3: ev.target.value })} className="w-full rounded border p-1 text-xs">
+                <select value={e.categoryL3} onChange={(ev) => onChange({ categoryL3: ev.target.value })} className="w-full min-h-[40px] rounded border px-2 py-1 text-xs">
                   <option value="">(소분류 없음)</option>
                   {l3s.map((c) => <option key={c}>{c}</option>)}
                 </select>
@@ -375,7 +381,7 @@ function EntryCard({
               {l2s.length === 0 && <p className="text-xs text-slate-400">중분류 없음</p>}
 
               <label className="block text-xs">필요도
-                <select value={e.necessity} onChange={(ev) => onChange({ necessity: ev.target.value })} className="mt-1 w-full rounded border p-1">
+                <select value={e.necessity} onChange={(ev) => onChange({ necessity: ev.target.value })} className="mt-1 w-full min-h-[40px] rounded border px-2 py-1">
                   {NECESSITY.map((n) => <option key={n.value} value={n.value}>{n.label}</option>)}
                 </select>
               </label>

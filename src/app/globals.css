@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* 폰 하단 메뉴 높이. AppShell 하단 메뉴, main 하단 여백, 하단 고정 버튼이 모두 이 값을 쓴다 */
+  --bottom-nav-h: 4rem;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -26,11 +31,13 @@ body {
   touch-action: manipulation;
 }
 
-@media (max-width: 768px) {
+/* iOS는 16px 미만 입력칸에 포커스하면 화면을 확대한다.
+   Tailwind text-sm/text-xs가 덮어쓰지 못하도록 !important (폰·태블릿 폭) */
+@media (max-width: 1023px) {
   input,
   select,
   textarea {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
 

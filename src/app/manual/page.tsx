@@ -389,7 +389,7 @@ export default function ManualPage() {
                         setCardCompany(CARD_COMPANIES[0]);
                       }
                     }}
-                    className={`flex-1 min-h-[44px] rounded-xl border text-sm font-medium transition-colors ${
+                    className={`flex-1 min-h-[44px] whitespace-nowrap rounded-xl border px-1 text-sm font-medium transition-colors ${
                       isActive
                         ? "border-blue-500 bg-blue-50 text-blue-700"
                         : "border-slate-200 bg-white text-slate-500 active:bg-slate-100"
@@ -522,7 +522,7 @@ export default function ManualPage() {
       <div
         className="fixed inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-slate-200 px-4 py-2 md:hidden"
         style={{
-          bottom: "calc(3.5rem + env(safe-area-inset-bottom))",
+          bottom: "calc(var(--bottom-nav-h) + env(safe-area-inset-bottom))",
         }}
       >
         <div className="max-w-[390px] mx-auto">

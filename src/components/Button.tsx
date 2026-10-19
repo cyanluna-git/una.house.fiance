@@ -32,7 +32,7 @@ export default function Button({
   return (
     <button
       disabled={disabled || loading}
-      className={`${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} transition disabled:opacity-50 ${className}`}
+      className={`${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} whitespace-nowrap transition disabled:opacity-50 ${className}`}
       {...rest}
     >
       {loading ? "..." : children}
