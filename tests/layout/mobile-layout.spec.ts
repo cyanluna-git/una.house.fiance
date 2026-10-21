@@ -144,3 +144,78 @@ for (const vp of VIEWPORTS) {
     }
   });
 }
+
+// ---------------------------------------------------------------------------
+// /quick 검토 화면: 영수증 분석 결과(금액 불일치 경고, 긴 가맹점명)가 있는 상태.
+// 2026-10-21 폰에서 화면이 좌우로 잘려 보인 문제의 회귀 검사.
+// ---------------------------------------------------------------------------
+const FAKE_RECEIPT = {
+  entries: [
+    {
+      date: "2026-10-21",
+      merchant: "오늘도달콤아산장재점 아주아주긴가맹점이름테스트주식회사",
+      amount: 4400,
+      cardCompany: null,
+      categoryL1: "외식비",
+      categoryL2: "카페/음료",
+      categoryL3: "",
+      necessity: "unset",
+      note: "[영수증]",
+      classifiedBy: "rule",
+      aiConfidence: null,
+      duplicate: { level: "none", reason: "" },
+      receipt: {
+        check: "mismatch",
+        itemsSum: 4000,
+        total: 4400,
+        diff: 400,
+        warnings: ["품목 합계와 영수증 합계가 다릅니다 (차이 400원)"],
+        items: [{ name: "아메리카노아이스라지사이즈", amount: 4000 }],
+      },
+      requiresReview: true,
+    },
+  ],
+};
+
+for (const vp of VIEWPORTS.filter((v) => v.width < 900)) {
+  test(`/quick 검토 카드 (영수증 경고) — ${vp.name}`, async ({ browser }) => {
+    const ctx = await browser.newContext({
+      viewport: { width: vp.width, height: vp.height },
+      isMobile: true,
+      hasTouch: true,
+      baseURL: "http://127.0.0.1:3106",
+    });
+    const page = await ctx.newPage();
+    await page.request.post("/api/auth/unlock", { data: { key: "layout-test-key" } });
+    await page.route("**/api/quick-entry/receipt", (route) =>
+      route.fulfill({ json: FAKE_RECEIPT }),
+    );
+    await page.goto("/quick", { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "영수증 사진" }).click();
+    await page.locator("input[type=file]").setInputFiles({
+      name: "r.jpg",
+      mimeType: "image/jpeg",
+      buffer: Buffer.from("x"),
+    });
+    await page.getByRole("button", { name: /장 분석/ }).click();
+    await page.getByText("검토 (1건)").waitFor();
+    await page.getByRole("button", { name: "수정" }).click(); // 펼친 상태도 검사
+
+    const m = await page.evaluate(() => {
+      const vw = document.documentElement.clientWidth;
+      const out: string[] = [];
+      for (const el of document.querySelectorAll("main *, section *")) {
+        const r = el.getBoundingClientRect();
+        // 가로 스크롤 영역(카테고리 칩 등) 안쪽은 정상이므로 제외
+        if (el.closest(".overflow-x-auto")) continue;
+        if (r.width > 0 && (r.right > vw + 1 || r.left < -1)) {
+          out.push(`${el.tagName.toLowerCase()} ${(el.textContent ?? "").trim().slice(0, 20)} [${Math.round(r.left)}..${Math.round(r.right)}]`);
+        }
+      }
+      return { overflow: document.documentElement.scrollWidth - vw, out: out.slice(0, 8) };
+    });
+    expect.soft(m.overflow, "가로 넘침").toBeLessThanOrEqual(0);
+    expect.soft(m.out, "화면 밖으로 나간 요소").toEqual([]);
+    await ctx.close();
+  });
+}

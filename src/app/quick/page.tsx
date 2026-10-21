@@ -215,7 +215,7 @@ export default function QuickEntryPage() {
   const selectedCount = entries.filter((e) => e.selected && !blockReason(e)).length;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-4">
+    <div className="mx-auto w-full min-w-0 max-w-3xl space-y-4 p-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-bold">⚡ 빠른 입력</h1>
         <Link href="/manual" className="whitespace-nowrap text-sm text-blue-600 underline-offset-2 hover:underline">
@@ -274,7 +274,7 @@ export default function QuickEntryPage() {
 
       {entries.length > 0 && (
         <section className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-semibold">검토 ({entries.length}건)</h2>
             <Button variant="primary" onClick={commit} disabled={busy || selectedCount === 0}>
               선택 {selectedCount}건 저장
@@ -314,7 +314,7 @@ function EntryCard({
   const l3s = getL3Categories(e.categoryL1, e.categoryL2);
 
   return (
-    <div className={`rounded-lg border p-3 text-sm ${block ? "border-slate-200 bg-slate-50" : "border-slate-300 bg-white"}`}>
+    <div className={`min-w-0 rounded-lg border p-3 text-sm ${block ? "border-slate-200 bg-slate-50" : "border-slate-300 bg-white"}`}>
       <div className="flex items-start gap-2">
         <input
           type="checkbox"
@@ -323,10 +323,10 @@ function EntryCard({
           disabled={!!(e.duplicate.level === "exact")}
           onChange={(ev) => onChange({ selected: ev.target.checked })}
         />
-        <div className="flex-1 space-y-1">
+        <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium">{e.merchant || "(가맹점 없음)"}</span>
-            <span className="font-semibold">{won(e.amount)}</span>
+            <span className="min-w-0 break-words font-medium">{e.merchant || "(가맹점 없음)"}</span>
+            <span className="whitespace-nowrap font-semibold tabular-nums">{won(e.amount)}</span>
             <span className="text-slate-500">{e.date || "날짜?"}</span>
             <span className="text-slate-500">{e.cardCompany ?? "카드?"}</span>
           </div>
@@ -344,11 +344,11 @@ function EntryCard({
 
           {open && (
             <div className="space-y-2 pt-2">
-              <div className="grid grid-cols-2 gap-2">
-                <label className="text-xs">날짜
+              <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
+                <label className="min-w-0 text-xs">날짜
                   <input type="date" value={e.date} onChange={(ev) => onChange({ date: ev.target.value })} className="mt-1 w-full min-h-[40px] rounded border px-2 py-1" />
                 </label>
-                <label className="text-xs">금액
+                <label className="min-w-0 text-xs">금액
                   <input
                     type="number"
                     value={e.amount ?? ""}
@@ -356,10 +356,10 @@ function EntryCard({
                     className="mt-1 w-full min-h-[40px] rounded border px-2 py-1"
                   />
                 </label>
-                <label className="text-xs">가맹점
+                <label className="min-w-0 text-xs">가맹점
                   <input value={e.merchant} onChange={(ev) => onChange({ merchant: ev.target.value })} className="mt-1 w-full min-h-[40px] rounded border px-2 py-1" />
                 </label>
-                <label className="text-xs">카드
+                <label className="min-w-0 text-xs">카드
                   <select value={e.cardCompany ?? "수동입력"} onChange={(ev) => onChange({ cardCompany: ev.target.value })} className="mt-1 w-full min-h-[40px] rounded border px-2 py-1">
                     {CARD_COMPANIES.map((c) => <option key={c}>{c}</option>)}
                   </select>
@@ -412,9 +412,9 @@ function EntryCard({
             </div>
           )}
 
-          <div className="flex gap-3 pt-1 text-xs">
-            <button className="text-blue-600" onClick={() => setOpen(!open)}>{open ? "접기" : "수정"}</button>
-            <button className="text-slate-500" onClick={onRemove}>목록에서 빼기</button>
+          <div className="flex gap-2 pt-1 text-sm">
+            <button className="min-h-[40px] px-2 text-blue-600" onClick={() => setOpen(!open)}>{open ? "접기" : "수정"}</button>
+            <button className="min-h-[40px] px-2 text-slate-500" onClick={onRemove}>목록에서 빼기</button>
           </div>
         </div>
       </div>
