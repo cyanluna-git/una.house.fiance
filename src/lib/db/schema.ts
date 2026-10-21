@@ -39,6 +39,7 @@ export const transactions = sqliteTable("transactions", {
   isManual: integer("is_manual", { mode: "boolean" }).default(false),
   isCompanyExpense: integer("is_company_expense", { mode: "boolean" }).default(false),
   cardId: integer("card_id"),
+  approvalNo: text("approval_no"), // 카드 승인번호 (영수증/승인 문자에서 읽은 값)
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 }, (table) => ({
   uqTxnDateMerchantAmountCard: uniqueIndex("uq_txn_date_merchant_amount_card").on(

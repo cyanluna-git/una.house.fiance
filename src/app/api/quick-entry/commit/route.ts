@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/lib/db";
 import { normalizeTransactionDates } from "@/lib/statement-date";
 import { checkDuplicate } from "@/lib/quick-entry/dedupe";
+import { normalizeApprovalNo } from "@/lib/quick-entry/receipt";
 
 interface CommitEntry {
   date: string;
@@ -15,6 +16,8 @@ interface CommitEntry {
   categoryL3?: string;
   necessity?: string;
   note?: string;
+  /** 카드 승인번호 (영수증/승인 문자에서 읽은 값, 숫자 6~12자리) */
+  approvalNo?: string | null;
   /** 사용자가 중복 경고를 확인하고 그래도 저장하겠다고 한 경우 */
   force?: boolean;
   /** 영수증 검증 결과 (receipt API 응답 그대로 전달). mismatch/missing이면 amountConfirmed 필요 */
@@ -48,8 +51,8 @@ export async function POST(request: NextRequest) {
         aggregation_date, aggregation_month, aggregation_basis,
         card_company, merchant, amount, payment_type, installment_months,
         category_l1, category_l2, category_l3, necessity,
-        note, source_type, is_manual, card_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+        note, source_type, is_manual, card_id, approval_no
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
       ON CONFLICT(date, merchant, amount, card_company) DO NOTHING
     `);
 
@@ -67,7 +70,8 @@ export async function POST(request: NextRequest) {
           return;
         }
         const cardCompany = e.cardCompany || "수동입력";
-        const dup = checkDuplicate({ date: e.date, merchant: e.merchant, amount: e.amount, cardCompany });
+        const approvalNo = normalizeApprovalNo(e.approvalNo);
+        const dup = checkDuplicate({ date: e.date, merchant: e.merchant, amount: e.amount, cardCompany, approvalNo });
         if (dup.level === "exact" || (dup.level === "likely" && !e.force)) {
           skipped.push({ index, reason: `중복: ${dup.reason}` });
           return;
@@ -78,7 +82,7 @@ export async function POST(request: NextRequest) {
           d.aggregationDate, d.aggregationMonth, d.aggregationBasis,
           cardCompany, e.merchant.trim(), e.amount, e.paymentType || "일시불", e.installmentMonths || 0,
           e.categoryL1, e.categoryL2 || "", e.categoryL3 || "", e.necessity || "unset",
-          e.note || null, sourceType, cardIdByCompany.get(cardCompany) ?? null,
+          e.note || null, sourceType, cardIdByCompany.get(cardCompany) ?? null, approvalNo,
         );
         if (r.changes > 0) saved.push(Number(r.lastInsertRowid));
         else skipped.push({ index, reason: "중복: 동일 거래가 이미 존재합니다" });

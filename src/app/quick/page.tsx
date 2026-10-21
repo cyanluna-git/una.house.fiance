@@ -19,6 +19,7 @@ interface Entry {
   amount: number | null;
   cardCompany: string | null;
   cardLast4?: string | null;
+  approvalNo?: string | null;
   time?: string | null;
   categoryL1: string;
   categoryL2: string;
@@ -188,6 +189,7 @@ export default function QuickEntryPage() {
               categoryL3: e.categoryL3,
               necessity: e.necessity,
               note: e.note,
+              approvalNo: e.approvalNo,
               force: e.force,
               receiptCheck: e.receipt?.check,
               amountConfirmed: e.amountConfirmed,
@@ -329,6 +331,7 @@ function EntryCard({
             <span className="whitespace-nowrap font-semibold tabular-nums">{won(e.amount)}</span>
             <span className="text-slate-500">{e.date || "날짜?"}</span>
             <span className="text-slate-500">{e.cardCompany ?? "카드?"}</span>
+            {e.approvalNo && <span className="whitespace-nowrap text-xs text-slate-400">승인 {e.approvalNo}</span>}
           </div>
 
           <div className="flex flex-wrap gap-1 text-xs">
@@ -358,6 +361,15 @@ function EntryCard({
                 </label>
                 <label className="min-w-0 text-xs">가맹점
                   <input value={e.merchant} onChange={(ev) => onChange({ merchant: ev.target.value })} className="mt-1 w-full min-h-[40px] rounded border px-2 py-1" />
+                </label>
+                <label className="min-w-0 text-xs">승인번호
+                  <input
+                    inputMode="numeric"
+                    value={e.approvalNo ?? ""}
+                    onChange={(ev) => onChange({ approvalNo: ev.target.value.replace(/[^\d-]/g, "") || null })}
+                    placeholder="없으면 비움"
+                    className="mt-1 w-full min-h-[40px] rounded border px-2 py-1"
+                  />
                 </label>
                 <label className="min-w-0 text-xs">카드
                   <select value={e.cardCompany ?? "수동입력"} onChange={(ev) => onChange({ cardCompany: ev.target.value })} className="mt-1 w-full min-h-[40px] rounded border px-2 py-1">

@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     // 합계를 못 읽었으면 중복 판정도 하지 않는다 (금액 불명)
     const dup =
       extract.date && merchant && extract.total !== null
-        ? checkDuplicate({ date: extract.date, merchant, amount: extract.total, cardCompany: extract.cardCompany ?? "수동입력" })
+        ? checkDuplicate({ date: extract.date, merchant, amount: extract.total, cardCompany: extract.cardCompany ?? "수동입력", approvalNo: extract.approvalNo })
         : { level: "none" as const, reason: "", matches: [] };
 
     // 메모: 품목은 참고용으로 요약 (300자 상한)

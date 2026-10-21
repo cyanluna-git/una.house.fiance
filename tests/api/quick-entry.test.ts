@@ -135,3 +135,49 @@ describe("수동 입력 중복 → 409", () => {
     expect(second.status).toBe(409);
   });
 });
+
+describe("승인번호", () => {
+  const base = {
+    date: "2026-05-06",
+    amount: 54321,
+    cardCompany: "신한카드",
+    categoryL1: "외식비",
+    categoryL2: "카페/음료",
+  };
+
+  test("QE-09 승인번호가 저장되고, 같은 승인번호·금액은 가맹점 표기가 달라도 중복으로 막는다", async () => {
+    const no = String(30000000 + (Date.now() % 9999999)); // 8자리
+    const first = await post("/api/quick-entry/commit", cookie, {
+      sourceType: "receipt",
+      entries: [{ ...base, merchant: `[QE-TEST]승인-${no}`, approvalNo: ` ${no.slice(0, 4)}-${no.slice(4)} ` }],
+    });
+    const d1 = await first.json();
+    expect(d1.savedCount).toBe(1);
+
+    const list = await (await fetch(`${BASE}/api/transactions?from=2026-05-06&to=2026-05-06&limit=200`, { headers: { Cookie: cookie } })).json();
+    const row = (list.data ?? []).find((t: { merchant: string }) => t.merchant.includes(`승인-${no}`));
+    expect(row?.approvalNo).toBe(no); // 공백·하이픈 제거된 숫자만
+
+    // 날짜(+2일)·가맹점·카드가 달라도 같은 승인번호+금액이면 같은 결제
+    const second = await post("/api/quick-entry/commit", cookie, {
+      sourceType: "receipt",
+      entries: [{ ...base, date: "2026-05-08", cardCompany: "수동입력", merchant: "[QE-TEST]전혀다른이름", approvalNo: no }],
+    });
+    const d2 = await second.json();
+    expect(d2.savedCount).toBe(0);
+    expect(d2.skipped[0].reason).toContain("승인번호");
+  });
+
+  test("QE-10 승인번호 형식이 이상하면(5자리 등) 저장은 되되 승인번호는 비운다", async () => {
+    const m = `[QE-TEST]승인형식-${Date.now()}`;
+    const res = await post("/api/quick-entry/commit", cookie, {
+      sourceType: "receipt",
+      entries: [{ ...base, date: "2026-05-07", amount: 54322, merchant: m, approvalNo: "12345" }],
+    });
+    expect((await res.json()).savedCount).toBe(1);
+    const list = await (await fetch(`${BASE}/api/transactions?from=2026-05-07&to=2026-05-07&limit=200`, { headers: { Cookie: cookie } })).json();
+    const row = (list.data ?? []).find((t: { merchant: string }) => t.merchant === m);
+    expect(row).toBeTruthy();
+    expect(row.approvalNo ?? null).toBeNull();
+  });
+});

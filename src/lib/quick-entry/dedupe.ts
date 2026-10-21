@@ -59,7 +59,18 @@ export function checkDuplicate(entry: {
   merchant: string;
   amount: number;
   cardCompany?: string | null;
+  /** 같은 승인번호 + 같은 금액이면 가맹점·카드 표기가 달라도 같은 결제로 본다 */
+  approvalNo?: string | null;
 }): DupResult {
+  if (entry.approvalNo) {
+    const same = sqlite
+      .prepare(
+        `SELECT id, date, merchant, amount, card_company AS cardCompany, source_type AS sourceType
+         FROM transactions WHERE approval_no = ? AND amount = ?`,
+      )
+      .all(entry.approvalNo, entry.amount) as DupMatch[];
+    if (same.length) return { level: "exact", reason: "같은 승인번호·금액", matches: same };
+  }
   const rows = sqlite
     .prepare(
       `SELECT id, date, merchant, amount, card_company AS cardCompany, source_type AS sourceType

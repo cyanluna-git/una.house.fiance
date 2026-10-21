@@ -180,6 +180,7 @@ const newColumns = [
   { name: "aggregation_date", sql: `ALTER TABLE transactions ADD COLUMN aggregation_date TEXT` },
   { name: "aggregation_month", sql: `ALTER TABLE transactions ADD COLUMN aggregation_month TEXT` },
   { name: "aggregation_basis", sql: `ALTER TABLE transactions ADD COLUMN aggregation_basis TEXT` },
+  { name: "approval_no", sql: `ALTER TABLE transactions ADD COLUMN approval_no TEXT` },
 ];
 for (const col of newColumns) {
   try {
@@ -188,6 +189,8 @@ for (const col of newColumns) {
     // Column already exists - ignore
   }
 }
+// 승인번호 조회용 (유니크 아님: 같은 승인번호가 다른 카드사/날짜에 다시 나올 수 있다)
+sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_txn_approval_no ON transactions(approval_no) WHERE approval_no IS NOT NULL`);
 
 // Migration: add frequency, weekdays, annual_date to fixed_expenses
 const fixedExpenseNewColumns = [
