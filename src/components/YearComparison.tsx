@@ -14,16 +14,20 @@ interface Props {
 
 export default function YearComparison({ yearlyData, yoyMonthlyData, years }: Props) {
   const ys = [...years].reverse();
+  // Years without payslips: leave income empty instead of drawing a misleading 0 bar
+  const chartData = yearlyData.map((y) => ({ ...y, income: y.income > 0 ? y.income : null }));
+  const noIncomeYears = yearlyData.filter((y) => y.income <= 0).map((y) => y.year);
   if (yearlyData.length === 0) return null;
   return (
     <div className="space-y-6 mb-6">
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-slate-900 mb-1">연도별 지출·수입</h3>
         <p className="text-xs text-slate-500 mb-4">
-          수입은 급여 명세서가 있는 기간만 집계됩니다. 거래가 일부 월에만 있는 해는 합계가 작게 보일 수 있습니다.
+          수입은 급여 명세서가 있는 기간만 집계됩니다.
+          {noIncomeYears.length > 0 && ` ${noIncomeYears.join(", ")}년은 급여 자료가 없어 수입·저축률을 표시하지 않습니다.`}
         </p>
         <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={yearlyData}>
+          <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="year" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} tickFormatter={formatAmount} />
