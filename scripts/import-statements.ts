@@ -32,7 +32,7 @@ async function main() {
   let parsed = 0;
   for (const f of files) {
     const name = nameForDetect(f);
-    const list = await parseFile(fs.readFileSync(f), name);
+    const list = await parseFile(fs.readFileSync(f), name, process.env.IMPORT_PASSWORD);
     const stMonth = parseStatementMonthFromFileName(name);
     for (const t of list) {
       parsed++;
