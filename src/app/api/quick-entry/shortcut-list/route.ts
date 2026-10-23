@@ -4,14 +4,9 @@ import { checkDuplicate } from "@/lib/quick-entry/dedupe";
 import { categorizeMerchant } from "@/lib/categorizer";
 import { saveQuickEntries, type SaveEntry } from "@/lib/quick-entry/save";
 import { NECESSITY_DEFAULTS } from "@/lib/categories";
+import { cardCompanyFromCardName } from "@/lib/quick-entry/card-name";
 
 const MAX_BYTES = 12 * 1024 * 1024;
-
-function normalizeCard(card: string | null): string | null {
-  if (!card) return null;
-  if (/M\d?|현대|BOOST|ZERO|HYUNDAI/i.test(card)) return "현대카드";
-  return null; // 모르는 카드는 카드사를 비워 둔다 (수동입력으로 저장되지 않게 아래에서 보류)
-}
 
 function kstToday(): string {
   return new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
@@ -71,7 +66,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
       for (const t of v.items) {
-        const cardCompany = normalizeCard(t.card);
+        const cardCompany = cardCompanyFromCardName(t.card);
         const cat = categorizeMerchant(t.merchant);
         const unclassified = cat.categoryL1 === "기타" && cat.categoryL2 === "미분류";
         if (!cardCompany || unclassified) {

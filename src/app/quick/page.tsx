@@ -30,6 +30,8 @@ interface Entry {
   aiConfidence: number | null;
   duplicate: { level: DupLevel; reason: string };
   raw?: string;
+  /** 결제내역 캡처: 해당 날짜의 읽은 거래 합 vs 화면 상단 일별 합계 */
+  dayCheck?: { status: "verified" | "mismatch" | "no_total"; sum: number; expected: number | null };
   receipt?: {
     check: "ok" | "mismatch" | "missing";
     itemsSum: number;
@@ -70,7 +72,7 @@ function blockReason(e: Entry): string | null {
 // ---------------------------------------------------------------------------
 
 export default function QuickEntryPage() {
-  const [tab, setTab] = useState<"text" | "receipt">("text");
+  const [tab, setTab] = useState<"text" | "receipt" | "list">("text");
   const [text, setText] = useState("");
   const [useAi, setUseAi] = useState(true);
   const [files, setFiles] = useState<File[]>([]);
@@ -111,6 +113,47 @@ export default function QuickEntryPage() {
     } catch (e) {
       setError((e as Error).message);
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function analyzeList() {
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    const added: Entry[] = [];
+    try {
+      for (let i = 0; i < files.length; i++) {
+        setProgress(`${i + 1}/${files.length} 분석 중… (장당 20~40초)`);
+        const fd = new FormData();
+        fd.append("image", files[i]);
+        fd.append("useAi", String(useAi));
+        const res = await fetch("/api/quick-entry/list", { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok || data.analysisFailed) {
+          setError(`${files[i].name}: ${data.error || "분석 실패"}`);
+          continue;
+        }
+        if (!data.entries?.length) {
+          setError(`${files[i].name}: 화면에서 결제 내역을 찾지 못했습니다`);
+          continue;
+        }
+        for (const [j, e] of (data.entries as Entry[]).entries()) {
+          added.push({
+            ...e,
+            key: `l${Date.now()}-${i}-${j}`,
+            source: "sms",
+            // 합계가 맞는 날짜만 기본 선택. 안 맞거나 합계가 없는 날은 사람이 확인 후 선택한다.
+            selected: e.duplicate?.level !== "exact" && e.amount !== null && e.dayCheck?.status === "verified",
+            amountConfirmed: false,
+            force: false,
+            duplicate: e.duplicate ?? { level: "none", reason: "" },
+          });
+        }
+      }
+      setEntries((prev) => [...added, ...prev]);
+    } finally {
+      setProgress("");
       setBusy(false);
     }
   }
@@ -226,13 +269,13 @@ export default function QuickEntryPage() {
       </div>
 
       <div className="flex gap-2">
-        {(["text", "receipt"] as const).map((t) => (
+        {(["text", "receipt", "list"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`rounded-full px-4 py-1.5 text-sm ${tab === t ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-700"}`}
           >
-            {t === "text" ? "문자/카톡 붙여넣기" : "영수증 사진"}
+            {t === "text" ? "문자/카톡 붙여넣기" : t === "receipt" ? "영수증 사진" : "결제내역 캡처"}
           </button>
         ))}
       </div>
@@ -248,6 +291,23 @@ export default function QuickEntryPage() {
           />
           <Button variant="primary" onClick={analyzeText} disabled={busy || !text.trim()}>
             {busy ? "분석 중…" : "분석"}
+          </Button>
+        </div>
+      ) : tab === "list" ? (
+        <div className="space-y-2">
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/*"
+            multiple
+            onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+            className="block w-full text-sm"
+          />
+          <p className="text-xs text-slate-500">
+            카드사 앱의 결제 내역 목록 화면을 캡처해 올리세요. 장당 20~40초 걸립니다.
+            화면 상단의 일별 합계와 읽은 거래 합이 맞는 날짜만 자동 선택되고, 안 맞는 날짜는 직접 확인 후 선택합니다.
+          </p>
+          <Button variant="primary" onClick={analyzeList} disabled={busy || files.length === 0}>
+            {busy ? progress || "분석 중…" : `${files.length}장 분석`}
           </Button>
         </div>
       ) : (
@@ -340,6 +400,11 @@ function EntryCard({
             {e.duplicate.level === "possible" && <Tag color="yellow">유사 거래</Tag>}
             {e.receipt?.check === "mismatch" && <Tag color="amber">품목 합 차이 {e.receipt.diff?.toLocaleString()}원</Tag>}
             {e.receipt?.check === "missing" && <Tag color="amber">합계 못 읽음</Tag>}
+            {e.dayCheck?.status === "verified" && <Tag color="blue">일 합계 일치</Tag>}
+            {e.dayCheck?.status === "mismatch" && (
+              <Tag color="amber">일 합계 불일치 (읽은 합 {e.dayCheck.sum.toLocaleString()} / 화면 {e.dayCheck.expected?.toLocaleString()})</Tag>
+            )}
+            {e.dayCheck?.status === "no_total" && <Tag color="yellow">일 합계 없음</Tag>}
             {e.classifiedBy === "none" && <Tag color="slate">미분류</Tag>}
             {e.classifiedBy === "ai" && <Tag color="blue">AI {Math.round((e.aiConfidence ?? 0) * 100)}%</Tag>}
             {block && <Tag color="slate">저장 차단: {block}</Tag>}
