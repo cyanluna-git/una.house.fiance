@@ -145,11 +145,9 @@ export default function Home() {
     value: f.amount,
   }));
 
-  // Trend categories (top 5 by total across all time-series data)
-  // The simple trendData from server is month+amount; DashboardCharts also accepts trendData with category keys.
-  // Pass a flat trendData (month+amount) and empty trendCategories to keep charts compatible.
-  const trendCategories: string[] = [];
-  const trendData = dashData.trendData;
+  // Trend: category x month series from /api/dashboard
+  const trendCategories: string[] = dashData.trendCategories ?? [];
+  const trendData = dashData.categoryTrendData ?? [];
 
   const monthlyData = dashData.trendData.map((d) => ({
     month: d.month,

@@ -260,6 +260,37 @@ export async function GET(request: NextRequest) {
       .slice(-12)
       .map((r) => ({ month: r.m, amount: r.amount }));
 
+    // Category x month trend (same 12-month window), L1 pivot, top 5 by total
+    const trendMonths = trendData.map((r) => r.month);
+    const catMonthRows = trendMonths.length
+      ? (sqlite
+          .prepare(
+            `SELECT ${monthExpr} AS m, COALESCE(category_l1, '기타') AS l1, SUM(ABS(amount)) AS amount
+             FROM transactions
+             WHERE ${monthExpr} >= ? AND ${monthExpr} <= ?
+             GROUP BY m, l1`
+          )
+          .all(trendMonths[0], trendMonths[trendMonths.length - 1]) as Array<{
+          m: string;
+          l1: string;
+          amount: number;
+        }>)
+      : [];
+    const l1Totals = new Map<string, number>();
+    for (const r of catMonthRows) l1Totals.set(r.l1, (l1Totals.get(r.l1) ?? 0) + r.amount);
+    const trendCategories = Array.from(l1Totals.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([l1]) => l1);
+    const categoryTrendData = trendMonths.map((m): Record<string, string | number> & { month: string } => {
+      const point: Record<string, string | number> & { month: string } = { month: m };
+      for (const c of trendCategories) point[c] = 0;
+      for (const r of catMonthRows) {
+        if (r.m === m && trendCategories.includes(r.l1)) point[r.l1] = r.amount;
+      }
+      return point;
+    });
+
     // ── 11. Category table (L1 → L2) ─────────────────────────────────────
     type CatTableRow = {
       categoryL1: string;
@@ -319,6 +350,8 @@ export async function GET(request: NextRequest) {
       familyBreakdown,
       incomeExpenseData,
       trendData,
+      categoryTrendData,
+      trendCategories,
       categoryTable,
     };
 
