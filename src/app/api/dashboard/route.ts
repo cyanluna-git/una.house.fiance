@@ -6,7 +6,10 @@ import type { DashboardResponse } from "@/types";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const month = searchParams.get("month"); // YYYY-MM or null (all-time)
+    const rawMonth = searchParams.get("month"); // YYYY-MM or null
+    const rawYear = searchParams.get("year"); // YYYY or null (all-time)
+    const month = rawMonth && /^\d{4}-\d{2}$/.test(rawMonth) ? rawMonth : null;
+    const year = !month && rawYear && /^\d{4}$/.test(rawYear) ? rawYear : null;
 
     // ── 1. Available months ────────────────────────────────────────────────
     const txMonthRows = sqlite
@@ -30,10 +33,19 @@ export async function GET(request: NextRequest) {
     // Build aggregation month expression for filtering
     const monthExpr = `COALESCE(aggregation_month, substr(aggregation_date,1,7), substr(original_date,1,7), substr(date,1,7))`;
 
-    const txWhereClause = month ? `WHERE ${monthExpr} = ?` : "";
-    const salWhereClause = month ? "WHERE substr(pay_date,1,7) = ?" : "";
-    const txParams: string[] = month ? [month] : [];
-    const salParams: string[] = month ? [month] : [];
+    // Period scope: a single month wins over a year; neither = all-time
+    const txWhereClause = month
+      ? `WHERE ${monthExpr} = ?`
+      : year
+        ? `WHERE ${monthExpr} LIKE ?`
+        : "";
+    const salWhereClause = month
+      ? "WHERE substr(pay_date,1,7) = ?"
+      : year
+        ? "WHERE substr(pay_date,1,7) LIKE ?"
+        : "";
+    const txParams: string[] = month ? [month] : year ? [`${year}-%`] : [];
+    const salParams: string[] = month ? [month] : year ? [`${year}-%`] : [];
 
     // Transaction aggregates
     type TxAgg = { totalSpend: number; pureSpend: number; companySpend: number; totalCount: number };
@@ -86,7 +98,11 @@ export async function GET(request: NextRequest) {
       .all() as FixedExpRow[];
 
     const now = new Date();
-    const calcYear = month ? Number(month.slice(0, 4)) : now.getFullYear();
+    const calcYear = month
+      ? Number(month.slice(0, 4))
+      : year
+        ? Number(year)
+        : now.getFullYear();
     const calcMonth = month ? Number(month.slice(5, 7)) : now.getMonth() + 1;
 
     const fixedExpenseMonthly = activeFixed.reduce(
@@ -107,16 +123,26 @@ export async function GET(request: NextRequest) {
     );
 
     // ── 4. Savings rate ───────────────────────────────────────────────────
-    let monthsInView = 1;
-    if (!month) {
-      const cntRow = sqlite
+    // Only months that actually have salary data are compared, so a period that
+    // starts before the first payslip does not distort the rate.
+    const incomeMonthRows = sqlite
+      .prepare(
+        `SELECT DISTINCT substr(pay_date,1,7) AS m FROM salary_statements ${salWhereClause}`
+      )
+      .all(...salParams) as Array<{ m: string }>;
+    const incomeMonths = incomeMonthRows.map((r) => r.m).filter(Boolean);
+    let spendInIncomeMonths = 0;
+    if (incomeMonths.length > 0) {
+      const ph = incomeMonths.map(() => "?").join(",");
+      const row = sqlite
         .prepare(
-          `SELECT COUNT(DISTINCT ${monthExpr}) AS cnt FROM transactions`
+          `SELECT SUM(CASE WHEN is_company_expense = 0 THEN ABS(amount) ELSE 0 END) AS s
+           FROM transactions WHERE ${monthExpr} IN (${ph})`
         )
-        .get() as { cnt: number };
-      monthsInView = Math.max(cntRow?.cnt ?? 1, 1);
+        .get(...incomeMonths) as { s: number | null };
+      spendInIncomeMonths = row?.s ?? 0;
     }
-    const totalSpendWithFixed = pureHouseholdSpend + fixedExpenseMonthly * monthsInView;
+    const totalSpendWithFixed = spendInIncomeMonths + fixedExpenseMonthly * incomeMonths.length;
     const savingsRate =
       incomeTotal > 0
         ? Math.round(((incomeTotal - totalSpendWithFixed) / incomeTotal) * 100)
@@ -291,6 +317,33 @@ export async function GET(request: NextRequest) {
       return point;
     });
 
+    // ── 10b. Year-over-year (always all data) ─────────────────────────────
+    const availableYears = Array.from(
+      new Set(Array.from(allMonthlyMap.keys()).map((m) => m.slice(0, 4)))
+    )
+      .filter((y) => /^\d{4}$/.test(y))
+      .sort()
+      .reverse();
+    const yearlyData = availableYears
+      .slice()
+      .reverse()
+      .map((y) => {
+        const ms = Array.from(allMonthlyMap.keys()).filter((m) => m.startsWith(`${y}-`));
+        const spend = ms.reduce((a, m) => a + (allMonthlyMap.get(m) ?? 0), 0);
+        const incMs = Array.from(allIncomeMap.keys()).filter((m) => m.startsWith(`${y}-`));
+        const income = incMs.reduce((a, m) => a + (allIncomeMap.get(m) ?? 0), 0);
+        return { year: y, spend, income, months: ms.length };
+      });
+    const yoyMonthlyData = Array.from({ length: 12 }, (_, i) => {
+      const mm = String(i + 1).padStart(2, "0");
+      const point: Record<string, string | number> & { month: string } = { month: `${i + 1}월` };
+      for (const y of availableYears) {
+        const v = allMonthlyMap.get(`${y}-${mm}`);
+        if (v !== undefined) point[y] = v;
+      }
+      return point;
+    });
+
     // ── 11. Category table (L1 → L2) ─────────────────────────────────────
     type CatTableRow = {
       categoryL1: string;
@@ -335,6 +388,9 @@ export async function GET(request: NextRequest) {
     // ── Assemble response ─────────────────────────────────────────────────
     const response: DashboardResponse = {
       availableMonths,
+      availableYears,
+      yearlyData,
+      yoyMonthlyData,
       incomeTotal,
       grossIncome,
       totalDeductions,

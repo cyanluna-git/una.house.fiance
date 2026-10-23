@@ -4,6 +4,8 @@ import Money from "@/components/Money";
 import { Fragment, useEffect, useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import PeriodFilter from "@/components/PeriodFilter";
+import YearComparison from "@/components/YearComparison";
 import type { Transaction, DashboardResponse } from "@/types";
 
 const DashboardCharts = dynamic(() => import("@/components/DashboardCharts"), {
@@ -22,6 +24,7 @@ const NECESSITY_COLORS: Record<string, string> = {
 
 export default function Home() {
   const [dashData, setDashData] = useState<DashboardResponse | null>(null);
+  const [selectedYear, setSelectedYear] = useState<string>("all");
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
   const [expandedL1, setExpandedL1] = useState<Set<string>>(new Set());
   const [modalCategory, setModalCategory] = useState<{ l1: string; l2?: string } | null>(null);
@@ -37,9 +40,11 @@ export default function Home() {
       setLoading(true);
       try {
         const url =
-          selectedMonth === "all"
-            ? "/api/dashboard"
-            : `/api/dashboard?month=${selectedMonth}`;
+          selectedMonth !== "all"
+            ? `/api/dashboard?month=${selectedMonth}`
+            : selectedYear !== "all"
+              ? `/api/dashboard?year=${selectedYear}`
+              : "/api/dashboard";
         const res = await fetch(url);
         if (!res.ok) throw new Error("dashboard fetch failed");
         const data: DashboardResponse = await res.json();
@@ -51,7 +56,7 @@ export default function Home() {
       }
     };
     fetchDashboard();
-  }, [selectedMonth]);
+  }, [selectedMonth, selectedYear]);
 
   // Lazy-fetch modal transactions when modal opens
   useEffect(() => {
@@ -65,6 +70,10 @@ export default function Home() {
         const params = new URLSearchParams({ limit: "200" });
         params.set("categoryL1", modalCategory.l1);
         if (modalCategory.l2) params.set("categoryL2", modalCategory.l2);
+        if (selectedMonth === "all" && selectedYear !== "all") {
+          params.set("from", `${selectedYear}-01-01`);
+          params.set("to", `${selectedYear}-12-31`);
+        }
         if (selectedMonth !== "all") {
           // Use from/to to scope to the selected month
           const from = `${selectedMonth}-01`;
@@ -90,7 +99,7 @@ export default function Home() {
       }
     };
     fetchModal();
-  }, [modalCategory, selectedMonth]);
+  }, [modalCategory, selectedMonth, selectedYear]);
 
   const formatAmount = (value: number) => {
     if (Math.abs(value) >= 10000) return `${(value / 10000).toFixed(0)}만`;
@@ -169,21 +178,17 @@ export default function Home() {
           {/* Month selector - mobile */}
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-slate-900">대시보드</h1>
-            <select
-              value={selectedMonth}
-              onChange={(e) => {
-                setSelectedMonth(e.target.value);
+            <PeriodFilter
+              years={dashData.availableYears}
+              months={dashData.availableMonths}
+              year={selectedYear}
+              month={selectedMonth}
+              onChange={({ year, month }) => {
+                setSelectedYear(year);
+                setSelectedMonth(month);
                 setExpandedL1(new Set());
               }}
-              className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
-            >
-              <option value="all">전체 기간</option>
-              {dashData.availableMonths.map((m) => (
-                <option key={m} value={m}>
-                  {m.replace("-", "년 ")}월
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           {/* Gradient hero card: current spend + MoM pill */}
@@ -289,6 +294,12 @@ export default function Home() {
           </button>
 
           {showMoreCharts && (
+            <>
+            <YearComparison
+              yearlyData={dashData.yearlyData}
+              yoyMonthlyData={dashData.yoyMonthlyData}
+              years={dashData.availableYears}
+            />
             <DashboardCharts
               incomeExpenseData={[]}
               monthlyData={monthlyData}
@@ -299,6 +310,7 @@ export default function Home() {
               trendCategories={trendCategories}
               selectedMonth={selectedMonth}
             />
+            </>
           )}
         </div>
         {/* ===== END MOBILE HERO ===== */}
@@ -313,21 +325,17 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <label className="text-sm text-slate-600 whitespace-nowrap">기간</label>
-            <select
-              value={selectedMonth}
-              onChange={(e) => {
-                setSelectedMonth(e.target.value);
+            <PeriodFilter
+              years={dashData.availableYears}
+              months={dashData.availableMonths}
+              year={selectedYear}
+              month={selectedMonth}
+              onChange={({ year, month }) => {
+                setSelectedYear(year);
+                setSelectedMonth(month);
                 setExpandedL1(new Set());
               }}
-              className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[140px]"
-            >
-              <option value="all">전체 기간</option>
-              {dashData.availableMonths.map((m) => (
-                <option key={m} value={m}>
-                  {m.replace("-", "년 ")}월
-                </option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 
@@ -405,10 +413,10 @@ export default function Home() {
         </div>
 
         {/* Category Detail Table (shown when specific month selected) */}
-        {selectedMonth !== "all" && dashData.categoryTable.length > 0 && (
+        {(selectedMonth !== "all" || selectedYear !== "all") && dashData.categoryTable.length > 0 && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              {selectedMonth.replace("-", "년 ")}월 카테고리 상세
+              {selectedMonth !== "all" ? `${selectedMonth.replace("-", "년 ")}월` : `${selectedYear}년`} 카테고리 상세
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -534,6 +542,11 @@ export default function Home() {
         )}
 
         {/* Charts (dynamically loaded - Recharts code-split) */}
+        <YearComparison
+            yearlyData={dashData.yearlyData}
+            yoyMonthlyData={dashData.yoyMonthlyData}
+            years={dashData.availableYears}
+          />
         <DashboardCharts
           incomeExpenseData={dashData.incomeExpenseData}
           monthlyData={monthlyData}
