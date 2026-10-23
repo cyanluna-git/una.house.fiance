@@ -114,7 +114,12 @@ export function parseMessage(raw: string, now: Date = new Date()): ParsedEntry {
     const anchor = tm ? tm[0] : dm ? dm[0] : null;
     if (anchor) {
       const after = stripped.slice(stripped.indexOf(anchor) + anchor.length);
-      const cut = after.split(/\s(?:누적|잔여|한도|잔액)/)[0].trim();
+      // 가맹점 뒤에 "금액원 일시불/할부 누적 …"이 오는 형식이 많다 → 금액 앞에서 자른다
+      const cut = after
+        .split(/\s(?:누적|잔여|한도|잔액)/)[0]
+        .split(/\s-?[\d,]{1,12}\s*원/)[0]
+        .replace(/\s*(일시불|할부|\d{1,2}\s*개월)\s*$/, "")
+        .trim();
       if (cut) merchant = cut;
     }
   }
