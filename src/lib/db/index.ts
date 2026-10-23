@@ -149,6 +149,30 @@ sqlite.exec(`
     linked_transaction_id INTEGER,
     created_at TEXT DEFAULT (datetime('now'))
   );
+  CREATE TABLE IF NOT EXISTS asset_accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    asset_type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    institution TEXT,
+    account_no TEXT,
+    monthly_deposit INTEGER,
+    deposit_day INTEGER,
+    interest_rate REAL,
+    start_date TEXT,
+    maturity_date TEXT,
+    is_active INTEGER DEFAULT 1,
+    note TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS asset_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL,
+    snapshot_date TEXT NOT NULL,
+    balance INTEGER NOT NULL,
+    principal INTEGER,
+    memo TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
   CREATE TABLE IF NOT EXISTS fixed_expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -331,6 +355,7 @@ sqlite.exec(`
   CREATE INDEX IF NOT EXISTS idx_splits_transaction_id ON transaction_splits(transaction_id);
   CREATE INDEX IF NOT EXISTS idx_salary_items_statement_id ON salary_items(statement_id);
   CREATE INDEX IF NOT EXISTS idx_loan_repayments_loan_id ON loan_repayments(loan_id);
+  CREATE UNIQUE INDEX IF NOT EXISTS uq_asset_snapshots_account_date ON asset_snapshots(account_id, snapshot_date);
 `);
 
 // Auto-seed category_rules if empty

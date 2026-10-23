@@ -169,6 +169,8 @@ export type CategoryRule = typeof categoryRules.$inferSelect;
 export type NewCategoryRule = typeof categoryRules.$inferInsert;
 export type SalaryStatement = typeof salaryStatements.$inferSelect;
 export type SalaryItem = typeof salaryItems.$inferSelect;
+export type AssetAccount = typeof assetAccounts.$inferSelect;
+export type AssetSnapshot = typeof assetSnapshots.$inferSelect;
 export type Loan = typeof loans.$inferSelect;
 export type NewLoan = typeof loans.$inferInsert;
 export type FamilyMember = typeof familyMembers.$inferSelect;
@@ -179,6 +181,34 @@ export type TransactionSplit = typeof transactionSplits.$inferSelect;
 export type NewTransactionSplit = typeof transactionSplits.$inferInsert;
 export type FixedExpense = typeof fixedExpenses.$inferSelect;
 export type NewFixedExpense = typeof fixedExpenses.$inferInsert;
+
+export const assetAccounts = sqliteTable("asset_accounts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  assetType: text("asset_type").notNull(), // 청약, 예적금, 저축, 퇴직연금, 투자, 기타
+  name: text("name").notNull(),
+  institution: text("institution"),
+  accountNo: text("account_no"),
+  monthlyDeposit: integer("monthly_deposit"),
+  depositDay: integer("deposit_day"),
+  interestRate: real("interest_rate"),
+  startDate: text("start_date"),
+  maturityDate: text("maturity_date"),
+  isActive: integer("is_active").default(1),
+  note: text("note"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const assetSnapshots = sqliteTable("asset_snapshots", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  accountId: integer("account_id").notNull(),
+  snapshotDate: text("snapshot_date").notNull(), // YYYY-MM-DD
+  balance: integer("balance").notNull(), // 평가금액
+  principal: integer("principal"), // 누적 납입원금(선택)
+  memo: text("memo"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+}, (table) => ({
+  uqAccountDate: uniqueIndex("uq_asset_snapshots_account_date").on(table.accountId, table.snapshotDate),
+}));
 
 export const loanRepayments = sqliteTable("loan_repayments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
