@@ -178,6 +178,8 @@ export interface DashboardResponse {
   familyBreakdown: { name: string; amount: number }[];
   incomeExpenseData: { month: string; income: number; expense: number }[];
   trendData: { month: string; amount: number }[];
+  categoryTrendData: Array<Record<string, string | number> & { month: string }>;
+  trendCategories: string[];
 
   // Drill-down table
   categoryTable: {
