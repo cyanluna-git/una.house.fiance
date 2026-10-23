@@ -107,7 +107,7 @@ export function parseHtmlXls(buffer: Buffer, cardCompany: string): ParsedTransac
       // Pattern: "가맹점명 금액" e.g. "엄청난해장국 26,000"
       if (amountIdx >= 0 && cellTexts[amountIdx]?.trim()) {
         amount = parseAmount(cellTexts[amountIdx]);
-      } else if (merchant) {
+      } else if (merchant && !isIdentifierText(merchant)) {
         // Try to extract amount from end of merchant string
         const amountMatch = merchant.match(/\s+([\d,]+)\s*$/);
         if (amountMatch) {
@@ -124,6 +124,9 @@ export function parseHtmlXls(buffer: Buffer, cardCompany: string): ParsedTransac
       }
 
       if (!merchant || amount === 0) continue;
+
+      // 카드 명세서 한 건이 1억 원 이상일 수 없음 — 번호·승인번호 등이 금액으로 잘못 읽힌 경우
+      if (Math.abs(amount) >= MAX_PLAUSIBLE_AMOUNT) continue;
 
       // Skip summary rows
       if (
@@ -146,6 +149,13 @@ export function parseHtmlXls(buffer: Buffer, cardCompany: string): ParsedTransac
   }
 
   return transactions;
+}
+
+const MAX_PLAUSIBLE_AMOUNT = 100_000_000;
+
+/** "항공권 번호: 9490085089"처럼 번호·승인번호를 설명하는 보조 행 (금액 아님) */
+export function isIdentifierText(text: string): boolean {
+  return /(번호|승인|티켓|예약)\s*[:：]/.test(text);
 }
 
 function formatDateString(dateStr: string): string | null {
