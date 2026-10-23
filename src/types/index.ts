@@ -157,6 +157,9 @@ export interface SeedRule {
 /** API response shape for GET /api/dashboard */
 export interface DashboardResponse {
   availableMonths: string[];
+  availableYears: string[];
+  yearlyData: { year: string; spend: number; income: number; months: number }[];
+  yoyMonthlyData: Array<Record<string, string | number> & { month: string }>;
 
   // Snapshot metrics
   incomeTotal: number;
