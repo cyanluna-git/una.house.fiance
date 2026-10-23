@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ACCESS_COOKIE_NAME, ACCESS_KEY_ENV_NAME } from "@/lib/access-auth";
 
-const SHORTCUT_PATH = "/api/quick-entry/shortcut";
+const SHORTCUT_PATHS = ["/api/quick-entry/shortcut", "/api/quick-entry/shortcut-list"];
 const SHORTCUT_TOKEN_ENV_NAME = "UNAHOUSE_SHORTCUT_TOKEN";
 
 const PUBLIC_PATHS = [
@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
 
   // 아이폰 단축어 전용: 이 한 경로에 한해 Bearer 토큰으로 인증한다 (쿠키 불필요).
   // 토큰은 거래 입력(shortcut) 엔드포인트에서만 유효하다.
-  if (pathname === SHORTCUT_PATH && request.method === "POST") {
+  if (SHORTCUT_PATHS.includes(pathname) && request.method === "POST") {
     const shortcutToken = process.env[SHORTCUT_TOKEN_ENV_NAME]?.trim() ?? "";
     const auth = request.headers.get("authorization") ?? "";
     if (shortcutToken && auth === `Bearer ${shortcutToken}`) {
