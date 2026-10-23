@@ -73,9 +73,23 @@ function inferDate(
   return `${year}-${pad(month)}-${pad(day)}`;
 }
 
+/**
+ * 카드사 앱 푸시 알림 스크린샷(OCR) 정리.
+ * - "Yesterday, 10:27 AM" 같은 알림 센터 상대시간 헤더 제거 (AM/PM이 가맹점에 섞이는 것 방지)
+ * - "OOO 님," 이름 접두 제거
+ * - "현대 M3 BOOST 승인" 처럼 카드명만 있고 "카드" 글자가 없는 현대카드 표기를 보정
+ */
+export function cleanPushText(raw: string): string {
+  return raw
+    .replace(/^\s*(Yesterday|Today|어제|오늘|\d+\s*(?:분|시간)\s*전|\d+\s*(?:m|h|min|hr)s?\s*ago)[^\n]*\n/gim, "")
+    .replace(/\b(?:\d{1,2}:\d{2}\s*(?:AM|PM))\b/gi, " ")
+    .replace(/[가-힣]{2,4}\s*님\s*,?/g, " ")
+    .replace(/현대\s+(M\d?|X|ZERO|[A-Z0-9]+)\s*(BOOST|EDITION\d*|[A-Z0-9]*)?\s*승인/g, "현대카드 $1 $2 승인");
+}
+
 export function parseMessage(raw: string, now: Date = new Date()): ParsedEntry {
   const warnings: string[] = [];
-  const text = raw.replace(/\[Web발신\]/g, "").replace(/\s+/g, " ").trim();
+  const text = cleanPushText(raw.replace(/\[Web발신\]/g, "")).replace(/\s+/g, " ").trim();
 
   const isCancel = /취소/.test(text);
 
