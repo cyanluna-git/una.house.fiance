@@ -349,7 +349,7 @@ describe("CAT-06: priority 높은 규칙이 먼저 적용됨", () => {
     // Create a transaction whose merchant matches both keywords
     const merchant = "CAT06_testcoffee_shop";
     const txRes = await postTransaction(cookie, {
-      date: "2025-08-01",
+      date: "2096-08-01",
       merchant,
       amount: 4500,
       cardCompany: "신한카드",
@@ -357,7 +357,7 @@ describe("CAT-06: priority 높은 규칙이 먼저 적용됨", () => {
     expect(txRes.status).toBe(200);
 
     // Retrieve and verify the higher-priority rule won
-    const getRes = await fetch(`${BASE}/api/transactions?from=2025-08-01&to=2025-08-01`, {
+    const getRes = await fetch(`${BASE}/api/transactions?from=2096-08-01&to=2096-08-01`, {
       headers: { Cookie: cookie },
     });
     expect(getRes.status).toBe(200);

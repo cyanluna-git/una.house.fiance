@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
+    middlewareClientMaxBodySize: "52mb",
     optimizePackageImports: ["recharts"],
   },
 };

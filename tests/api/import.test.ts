@@ -99,6 +99,11 @@ describe("IMP-01~04: 파일 유효성 검사", () => {
     expect(res.status).toBe(413);
   });
 
+  test("malformed multipart returns 400", async () => {
+    const res = await fetch(`${BASE}/api/import`, { method: "POST", headers: { Cookie: cookie, "Content-Type": "multipart/form-data; boundary=broken" }, body: "not multipart" });
+    expect(res.status).toBe(400);
+  });
+
   test("IMP-02: .csv 파일 → 400", async () => {
     const csvContent = "date,merchant,amount\n2026-01-15,스타벅스,5000";
     const blob = new Blob([csvContent], { type: "text/csv" });

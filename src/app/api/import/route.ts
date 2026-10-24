@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { matchCard } from "@/lib/card-matcher";
 import { sqlite } from "@/lib/db";
 import { parseFile } from "@/lib/parsers";
 import { categorizeMerchant } from "@/lib/categorizer";
@@ -9,11 +10,16 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
+    if (Number(request.headers.get("content-length")) > 52 * 1024 * 1024) {
+      return NextResponse.json({ error: "요청 크기가 너무 큽니다" }, { status: 413 });
+    }
+    let formData: FormData;
+    try { formData = await request.formData(); }
+    catch { return NextResponse.json({ error: "올바른 multipart 파일 요청이 아닙니다" }, { status: 400 }); }
     const file = formData.get("file") as File;
     const password = formData.get("password") as string | null;
 
-    if (!file) {
+    if (!file || typeof file === "string") {
       return NextResponse.json({ error: "파일을 선택하세요" }, { status: 400 });
     }
 
@@ -65,16 +71,9 @@ export async function POST(request: NextRequest) {
       // cards table might not exist yet
     }
 
-    const norm = (s: string) => s.replace(/본인/g, "").replace(/\s+/g, "").trim();
     function findCardId(company: string, cardName: string | null | undefined): number | null {
-      if (!company) return null;
-      const cNameNorm = cardName ? norm(cardName) : "";
-      for (const c of allCards) {
-        if (c.card_company !== company) continue;
-        if (c.card_name && cardName && norm(c.card_name) === cNameNorm) return c.id;
-        if (c.card_number && cardName && cardName.includes(c.card_number.replace(/'/g, ""))) return c.id;
-      }
-      return null;
+      const match = matchCard(allCards.map(c => ({ id: c.id, cardCompany: c.card_company, cardName: c.card_name, cardNumber: c.card_number, isActive: true })), { cardCompany: company, cardName, cardLast4: cardName?.match(/(?:^|\D)(\d{4})(?:\D|$)/)?.[1] }, true);
+      return match.status === "matched" ? match.card.id : null;
     }
 
     const transactionsToSave = parsedTransactions.map((t) => {
