@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import PeriodFilter from "@/components/PeriodFilter";
 import YearComparison from "@/components/YearComparison";
+import NecessityPanel from "@/components/NecessityPanel";
 import WealthPanel from "@/components/WealthPanel";
 import type { Transaction, DashboardResponse } from "@/types";
 
@@ -320,6 +321,7 @@ export default function Home() {
               yoyMonthlyData={dashData.yoyMonthlyData}
               years={dashData.availableYears}
             />
+            <NecessityPanel data={dashData.necessityTrend ?? []} />
             <DashboardCharts
               incomeExpenseData={[]}
               monthlyData={monthlyData}
@@ -567,6 +569,7 @@ export default function Home() {
             yoyMonthlyData={dashData.yoyMonthlyData}
             years={dashData.availableYears}
           />
+        <NecessityPanel data={dashData.necessityTrend ?? []} />
         <DashboardCharts
           incomeExpenseData={dashData.incomeExpenseData}
           monthlyData={monthlyData}
