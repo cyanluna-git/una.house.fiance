@@ -6,7 +6,7 @@
 import fs from "fs";
 import path from "path";
 import { db } from "../src/lib/db";
-import { transactions } from "../src/lib/db/schema";
+import { transactions, cards } from "../src/lib/db/schema";
 import { parseFile } from "../src/lib/parsers";
 import { categorizeMerchant } from "../src/lib/categorizer";
 import { normalizeTransactionDates, parseStatementMonthFromFileName } from "../src/lib/statement-date";
@@ -28,6 +28,18 @@ function nameForDetect(file: string) {
 async function main() {
   const files = inputs.flatMap((i) => collect(i)).sort();
   const keys = new Set(db.select().from(transactions).all().map((t) => `${t.date}|${t.merchant}|${t.amount}|${t.cardCompany}`));
+  const allCards = db.select().from(cards).all();
+  function findCardId(company: string, cardName: string | null | undefined): number | null {
+    if (!company) return null;
+    const norm = (s: string) => s.replace(/본인/g, "").replace(/\s+/g, "").trim();
+    const cNameNorm = cardName ? norm(cardName) : "";
+    for (const c of allCards) {
+      if (c.cardCompany !== company) continue;
+      if (c.cardName && cardName && norm(c.cardName) === cNameNorm) return c.id;
+      if (c.cardNumber && cardName && cardName.includes(c.cardNumber.replace(/'/g, ""))) return c.id;
+    }
+    return null;
+  }
   const rows: any[] = [];
   let parsed = 0;
   for (const f of files) {
@@ -49,6 +61,7 @@ async function main() {
         installmentMonths: t.installmentMonths || 0, installmentSeq: t.installmentSeq || 0, paymentAmount: t.paymentAmount || 0,
         fee: t.fee || 0, discount: t.discount || 0, categoryL1: cat.categoryL1, categoryL2: cat.categoryL2, categoryL3: cat.categoryL3,
         necessity: cat.necessity, sourceFile: path.basename(f).normalize("NFC"), sourceType: "card" as const, isManual: false,
+        cardId: findCardId(t.cardCompany, t.cardName),
       });
     }
   }

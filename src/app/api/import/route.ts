@@ -55,16 +55,26 @@ export async function POST(request: NextRequest) {
     const statementMonth = parseStatementMonthFromFileName(file.name);
 
     // Batch-load all cards to avoid N+1 queries
-    let cardMap = new Map<string, number>();
+    interface CardRow { id: number; card_company: string; card_name: string; card_number: string | null }
+    let allCards: CardRow[] = [];
     try {
-      const allCards = sqlite
-        .prepare("SELECT id, card_company, card_name FROM cards")
-        .all() as { id: number; card_company: string; card_name: string }[];
-      cardMap = new Map(
-        allCards.map((c) => [`${c.card_company}|${c.card_name}`, c.id])
-      );
+      allCards = sqlite
+        .prepare("SELECT id, card_company, card_name, card_number FROM cards")
+        .all() as CardRow[];
     } catch {
       // cards table might not exist yet
+    }
+
+    const norm = (s: string) => s.replace(/본인/g, "").replace(/\s+/g, "").trim();
+    function findCardId(company: string, cardName: string | null | undefined): number | null {
+      if (!company) return null;
+      const cNameNorm = cardName ? norm(cardName) : "";
+      for (const c of allCards) {
+        if (c.card_company !== company) continue;
+        if (c.card_name && cardName && norm(c.card_name) === cNameNorm) return c.id;
+        if (c.card_number && cardName && cardName.includes(c.card_number.replace(/'/g, ""))) return c.id;
+      }
+      return null;
     }
 
     const transactionsToSave = parsedTransactions.map((t) => {
@@ -76,9 +86,8 @@ export async function POST(request: NextRequest) {
         paymentMonthCandidate: t.paymentMonthCandidate || null,
       });
 
-      // Auto-link card_id from pre-loaded card map
-      const cardId =
-        cardMap.get(`${t.cardCompany}|${t.cardName || ""}`) ?? null;
+      // Auto-link card_id from pre-loaded card list
+      const cardId = findCardId(t.cardCompany, t.cardName);
 
       return {
         date: originalDate,

@@ -113,13 +113,16 @@ export default function CardsPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [showInactive, setShowInactive] = useState(false);
   const [usageMonth, setUsageMonth] = useState<string>("");
+  const [availableMonths, setAvailableMonths] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCards = useCallback(async () => {
-    const res = await fetch("/api/cards");
+  const fetchCards = useCallback(async (month?: string) => {
+    const url = month ? `/api/cards?month=${month}` : "/api/cards";
+    const res = await fetch(url);
     const json = await res.json();
     setCards(json.data || []);
     if (json.usageMonth) setUsageMonth(json.usageMonth);
+    if (json.availableMonths) setAvailableMonths(json.availableMonths);
   }, []);
 
   useEffect(() => {
@@ -138,9 +141,7 @@ export default function CardsPage() {
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const isCurrentMonth = usageMonth === currentMonth;
   const usageMonthLabel = usageMonth
-    ? isCurrentMonth
-      ? "이번달"
-      : `${parseInt(usageMonth.split("-")[1])}월`
+    ? `${parseInt(usageMonth.split("-")[1], 10)}월`
     : "이번달";
 
   async function handleSubmit(e: React.FormEvent) {
@@ -162,7 +163,7 @@ export default function CardsPage() {
 
     setForm(emptyForm);
     setShowForm(false);
-    fetchCards();
+    fetchCards(usageMonth);
 
     if (result.matchedTransactions > 0) {
       alert(`기존 거래 ${result.matchedTransactions}건이 이 카드에 연결되었습니다.`);
@@ -181,7 +182,7 @@ export default function CardsPage() {
       return;
     }
     setEditingId(null);
-    fetchCards();
+    fetchCards(usageMonth);
   }
 
   async function handleDelete(id: number) {
@@ -192,7 +193,7 @@ export default function CardsPage() {
       setError("오류가 발생했습니다. 다시 시도해 주세요.");
       return;
     }
-    fetchCards();
+    fetchCards(usageMonth);
   }
 
   async function handleDeactivate(card: Card) {
@@ -207,7 +208,7 @@ export default function CardsPage() {
       setError("오류가 발생했습니다. 다시 시도해 주세요.");
       return;
     }
-    fetchCards();
+    fetchCards(usageMonth);
   }
 
   function startEdit(card: Card) {
@@ -574,7 +575,28 @@ export default function CardsPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">카드 관리</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 className="text-2xl font-bold text-slate-800">카드 관리</h1>
+        {availableMonths.length > 0 && (
+          <div className="flex items-center gap-2">
+            <label htmlFor="card-month-select" className="text-sm font-medium text-slate-600">
+              조회 월
+            </label>
+            <select
+              id="card-month-select"
+              value={usageMonth}
+              onChange={(e) => fetchCards(e.target.value)}
+              className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-slate-700 min-h-[44px] sm:min-h-0"
+            >
+              {availableMonths.map((m) => (
+                <option key={m} value={m}>
+                  {m.replace("-", "년 ")}월 {m === currentMonth ? "(이번달)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       <ErrorBanner message={error} />
 
