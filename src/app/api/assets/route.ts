@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { assetAccounts, assetSnapshots } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
 
-const TYPES = ["청약", "예적금", "저축", "퇴직연금", "투자", "기타"];
+const TYPES = ["청약", "예적금", "저축", "퇴직연금", "투자", "부동산", "차량", "기타"];
 
 export async function GET() {
   try {

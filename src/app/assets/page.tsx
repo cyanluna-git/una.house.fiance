@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 
-const ASSET_TYPES = ["청약", "예적금", "저축", "퇴직연금", "투자", "기타"];
+const ASSET_TYPES = ["청약", "예적금", "저축", "퇴직연금", "투자", "부동산", "차량", "기타"];
 
 interface Snapshot {
   id: number;
