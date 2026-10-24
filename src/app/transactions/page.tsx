@@ -117,8 +117,12 @@ export default function TransactionsPage() {
 
   const handleEdit = (transaction: Transaction) => {
     setEditingId(transaction.id);
+
     setEditData({
       date: transaction.date,
+      cardId: transaction.cardId ?? null,
+      cardCompany: transaction.cardCompany,
+      cardName: transaction.cardName,
       categoryL1: transaction.categoryL1,
       categoryL2: transaction.categoryL2,
       categoryL3: transaction.categoryL3,
@@ -140,6 +144,9 @@ export default function TransactionsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: editData.date,
+          cardId: editData.cardId,
+          cardCompany: editData.cardCompany,
+          cardName: editData.cardName,
           categoryL1: editData.categoryL1,
           categoryL2: editData.categoryL2,
           categoryL3: editData.categoryL3,
@@ -155,6 +162,9 @@ export default function TransactionsPage() {
       if (response.ok) {
         setEditingId(null);
         fetchTransactions();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setError(data.error || "수정에 실패했습니다.");
       }
     } catch {
       setError("오류가 발생했습니다. 다시 시도해 주세요.");
@@ -521,6 +531,48 @@ export default function TransactionsPage() {
                               className="w-full border border-slate-300 rounded px-2 py-1.5 text-base lg:text-sm bg-white"
                             />
                           </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">카드 / 결제수단</label>
+                            <select
+                              value={editData.cardId ? String(editData.cardId) : (editData.cardCompany || "수동입력")}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (NON_CARD_METHODS[val]) {
+                                  setEditData(prev => ({ ...prev, cardId: null, cardCompany: val, cardName: val }));
+                                } else {
+                                  const cId = Number(val);
+                                  const found = cardList.find((c) => c.id === cId);
+                                  if (found) {
+                                    setEditData(prev => ({
+                                      ...prev,
+                                      cardId: found.id,
+                                      cardCompany: found.cardCompany,
+                                      cardName: found.cardName,
+                                    }));
+                                  }
+                                }
+                              }}
+                              className="w-full border border-slate-300 rounded px-2 py-1.5 text-base lg:text-sm bg-white"
+                            >
+                              {!editData.cardId && !NON_CARD_METHODS[editData.cardCompany || ""] && (
+                                <option value={editData.cardCompany || ""} disabled>{editData.cardName || editData.cardCompany || "카드 미지정"} (기존 내역)</option>
+                              )}
+                              <optgroup label="등록 카드">
+                                {cardList.filter((card) => card.isActive || card.id === editData.cardId).map((card) => (
+                                  <option key={card.id} value={card.id}>
+                                    {card.cardCompany} · {card.cardName}
+                                  </option>
+                                ))}
+                              </optgroup>
+                              <optgroup label="기타 결제수단">
+                                {Object.keys(NON_CARD_METHODS).map((m) => (
+                                  <option key={m} value={m}>
+                                    {m}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            </select>
+                          </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <label className="block text-xs font-medium text-slate-600 mb-1">대분류</label>
@@ -684,7 +736,47 @@ export default function TransactionsPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          {NON_CARD_METHODS[tx.cardCompany] ? (
+                          {editingId === tx.id ? (
+                            <select
+                              value={editData.cardId ? String(editData.cardId) : (editData.cardCompany || "수동입력")}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (NON_CARD_METHODS[val]) {
+                                  setEditData(prev => ({ ...prev, cardId: null, cardCompany: val, cardName: val }));
+                                } else {
+                                  const cId = Number(val);
+                                  const found = cardList.find((c) => c.id === cId);
+                                  if (found) {
+                                    setEditData(prev => ({
+                                      ...prev,
+                                      cardId: found.id,
+                                      cardCompany: found.cardCompany,
+                                      cardName: found.cardName,
+                                    }));
+                                  }
+                                }
+                              }}
+                              className="w-full px-2 py-1 border border-slate-300 rounded text-xs bg-white"
+                            >
+                              {!editData.cardId && !NON_CARD_METHODS[editData.cardCompany || ""] && (
+                                <option value={editData.cardCompany || ""} disabled>{editData.cardName || editData.cardCompany || "카드 미지정"} (기존 내역)</option>
+                              )}
+                              <optgroup label="등록 카드">
+                                {cardList.filter((card) => card.isActive || card.id === editData.cardId).map((card) => (
+                                  <option key={card.id} value={card.id}>
+                                    {card.cardCompany} · {card.cardName}
+                                  </option>
+                                ))}
+                              </optgroup>
+                              <optgroup label="기타 결제수단">
+                                {Object.keys(NON_CARD_METHODS).map((m) => (
+                                  <option key={m} value={m}>
+                                    {m}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            </select>
+                          ) : NON_CARD_METHODS[tx.cardCompany] ? (
                             <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${NON_CARD_METHODS[tx.cardCompany]}`}>
                               {tx.cardCompany}
                             </span>

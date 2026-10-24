@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getL2Categories, getL3Categories } from "@/lib/categories";
 import QuickCategoryPicker from "@/components/QuickCategoryPicker";
+import type { CardInfo } from "@/types";
 import Button from "@/components/Button";
 
 // ---------------------------------------------------------------------------
@@ -18,6 +19,8 @@ interface Entry {
   merchant: string;
   amount: number | null;
   cardCompany: string | null;
+  cardId?: number | null;
+  cardName?: string | null;
   cardLast4?: string | null;
   approvalNo?: string | null;
   time?: string | null;
@@ -47,7 +50,7 @@ interface Entry {
   source: "sms" | "receipt";
 }
 
-const CARD_COMPANIES = ["국민카드", "신한카드", "현대카드", "하나카드", "우리카드", "롯데카드", "농협카드", "삼성카드", "지역화폐", "수동입력"];
+const NON_CARD_METHODS = ["현금", "계좌이체", "자동이체", "수동입력"];
 const NECESSITY = [
   { value: "essential", label: "필수" },
   { value: "discretionary", label: "선택" },
@@ -80,6 +83,17 @@ export default function QuickEntryPage() {
   const [progress, setProgress] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [cardList, setCardList] = useState<CardInfo[]>([]);
+  const [cardError, setCardError] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/cards").then(async (res) => {
+      if (!res.ok) throw new Error("cards");
+      const data = await res.json();
+      if (!cancelled) setCardList((data.data || []).filter((c: CardInfo) => c.isActive));
+    }).catch(() => { if (!cancelled) setCardError(true); });
+    return () => { cancelled = true; };
+  }, []);
   const [result, setResult] = useState<string | null>(null);
 
   const update = (key: string, patch: Partial<Entry>) =>
@@ -227,6 +241,8 @@ export default function QuickEntryPage() {
               merchant: e.merchant,
               amount: e.amount,
               cardCompany: e.cardCompany,
+              cardId: e.cardId,
+              cardName: e.cardName,
               categoryL1: e.categoryL1,
               categoryL2: e.categoryL2,
               categoryL3: e.categoryL3,
@@ -331,6 +347,7 @@ export default function QuickEntryPage() {
         AI 분류 사용 (규칙으로 못 찾은 가맹점만)
       </label>
 
+      {cardError && <p role="alert" className="text-sm text-red-700">카드 목록을 불러오지 못했습니다. 새로고침 후 다시 시도하세요.</p>}
       {error && <div className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</div>}
       {result && <div className="rounded bg-emerald-50 p-3 text-sm text-emerald-700">{result}</div>}
 
@@ -347,6 +364,7 @@ export default function QuickEntryPage() {
             <EntryCard
               key={e.key}
               entry={e}
+              cards={cardList}
               onChange={(patch) => update(e.key, patch)}
               onRemove={() => setEntries((prev) => prev.filter((x) => x.key !== e.key))}
             />
@@ -363,10 +381,12 @@ export default function QuickEntryPage() {
 
 function EntryCard({
   entry: e,
+  cards,
   onChange,
   onRemove,
 }: {
   entry: Entry;
+  cards: CardInfo[];
   onChange: (patch: Partial<Entry>) => void;
   onRemove: () => void;
 }) {
@@ -390,7 +410,7 @@ function EntryCard({
             <span className="min-w-0 break-words font-medium">{e.merchant || "(가맹점 없음)"}</span>
             <span className="whitespace-nowrap font-semibold tabular-nums">{won(e.amount)}</span>
             <span className="text-slate-500">{e.date || "날짜?"}</span>
-            <span className="text-slate-500">{e.cardCompany ?? "카드?"}</span>
+            <span className="text-slate-500">{e.cardName || e.cardCompany || "카드?"}</span>
             {e.approvalNo && <span className="whitespace-nowrap text-xs text-slate-400">승인 {e.approvalNo}</span>}
           </div>
 
@@ -437,8 +457,19 @@ function EntryCard({
                   />
                 </label>
                 <label className="min-w-0 text-xs">카드
-                  <select value={e.cardCompany ?? "수동입력"} onChange={(ev) => onChange({ cardCompany: ev.target.value })} className="mt-1 w-full min-h-[40px] rounded border px-2 py-1">
-                    {CARD_COMPANIES.map((c) => <option key={c}>{c}</option>)}
+                  <select aria-label="카드" value={e.cardId ? String(e.cardId) : (NON_CARD_METHODS.includes(e.cardCompany || "") ? e.cardCompany! : "")}
+                    onChange={(ev) => {
+                      const card = cards.find((c) => String(c.id) === ev.target.value);
+                      if (card) onChange({ cardId: card.id, cardCompany: card.cardCompany, cardName: card.cardName });
+                      else if (NON_CARD_METHODS.includes(ev.target.value)) onChange({ cardId: null, cardCompany: ev.target.value, cardName: ev.target.value });
+                    }} className="mt-1 w-full min-w-0 min-h-[40px] rounded border px-2 py-1 text-base">
+                    <option value="" disabled>{e.cardCompany ? `${e.cardCompany} · 카드 미지정` : "카드를 선택하세요"}</option>
+                    <optgroup label="활성 카드">
+                      {cards.map((c) => <option key={c.id} value={c.id}>{c.cardCompany} · {c.cardName}</option>)}
+                    </optgroup>
+                    <optgroup label="기타 결제수단">
+                      {NON_CARD_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+                    </optgroup>
                   </select>
                 </label>
               </div>
