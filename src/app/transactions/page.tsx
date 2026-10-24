@@ -24,6 +24,8 @@ export default function TransactionsPage() {
     categoryL2: "",
     card: "",
   });
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  const [quickPeriod, setQuickPeriod] = useState<"all" | "thisMonth" | "prevMonth" | "3months" | "custom">("all");
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Transaction>>({});
@@ -32,6 +34,48 @@ export default function TransactionsPage() {
   const [tripList, setTripList] = useState<TripRef[]>([]);
 
   const limit = 50;
+
+  const handleQuickPeriod = (period: "all" | "thisMonth" | "prevMonth" | "3months") => {
+    setQuickPeriod(period);
+    setPage(1);
+    if (period === "all") {
+      setFilters(prev => ({ ...prev, from: "", to: "" }));
+      return;
+    }
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    if (period === "thisMonth") {
+      const monthStr = String(m + 1).padStart(2, "0");
+      const lastDay = new Date(y, m + 1, 0).getDate();
+      setFilters(prev => ({ ...prev, from: `${y}-${monthStr}-01`, to: `${y}-${monthStr}-${lastDay}` }));
+    } else if (period === "prevMonth") {
+      const prevDate = new Date(y, m - 1, 1);
+      const py = prevDate.getFullYear();
+      const pm = String(prevDate.getMonth() + 1).padStart(2, "0");
+      const pLastDay = new Date(py, prevDate.getMonth() + 1, 0).getDate();
+      setFilters(prev => ({ ...prev, from: `${py}-${pm}-01`, to: `${py}-${pm}-${pLastDay}` }));
+    } else if (period === "3months") {
+      const startDate = new Date(y, m - 2, 1);
+      const sy = startDate.getFullYear();
+      const sm = String(startDate.getMonth() + 1).padStart(2, "0");
+      const todayStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      setFilters(prev => ({ ...prev, from: `${sy}-${sm}-01`, to: todayStr }));
+    }
+  };
+
+  const activeFilterCount =
+    (filters.from ? 1 : 0) +
+    (filters.to ? 1 : 0) +
+    (filters.categoryL1 ? 1 : 0) +
+    (filters.categoryL2 ? 1 : 0) +
+    (filters.card ? 1 : 0);
+
+  const handleResetFilters = () => {
+    setQuickPeriod("all");
+    setFilters({ from: "", to: "", categoryL1: "", categoryL2: "", card: "" });
+    setPage(1);
+  };
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -151,9 +195,22 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="p-3 md:p-6">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 md:mb-6">거래 내역</h1>
+    <div className="p-3 md:p-6 w-full max-w-full overflow-hidden">
+      <div className="max-w-6xl mx-auto w-full min-w-0">
+        {/* Header & Stats */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 md:mb-5">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl md:text-3xl font-bold text-slate-900">거래 내역</h1>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-medium">
+              총 {total.toLocaleString()}건
+            </span>
+          </div>
+          {totalPages > 1 && (
+            <div className="text-xs text-slate-500 font-medium">
+              {page} / {totalPages} 페이지
+            </div>
+          )}
+        </div>
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" aria-live="assertive">
@@ -161,99 +218,190 @@ export default function TransactionsPage() {
           </div>
         )}
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                시작 날짜
-              </label>
-              <input
-                type="date"
-                value={filters.from}
-                onChange={(e) =>
-                  setFilters(prev => ({ ...prev, from: e.target.value }))
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded"
-              />
+        {/* Compact & Collapsible Filter Bar */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 p-3 mb-4 w-full max-w-full overflow-hidden">
+          {/* Quick Period Chips + Filter Toggle Button */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 max-w-full">
+              {[
+                { id: "all", label: "전체 기간" },
+                { id: "thisMonth", label: "이번달" },
+                { id: "prevMonth", label: "지난달" },
+                { id: "3months", label: "최근 3개월" },
+              ].map((p) => {
+                const isSelected = quickPeriod === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleQuickPeriod(p.id as any)}
+                    className={`whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors min-h-[36px] sm:min-h-0 ${
+                      isSelected
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                종료 날짜
-              </label>
-              <input
-                type="date"
-                value={filters.to}
-                onChange={(e) => setFilters(prev => ({ ...prev, to: e.target.value }))}
-                className="w-full px-3 py-2 border border-slate-300 rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                대분류
-              </label>
-              <select
-                value={filters.categoryL1}
-                onChange={(e) =>
-                  setFilters(prev => ({ ...prev, categoryL1: e.target.value, categoryL2: "" }))
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded"
+
+            <button
+              type="button"
+              onClick={() => setIsFilterExpanded((v) => !v)}
+              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors min-h-[36px] sm:min-h-0 ${
+                activeFilterCount > 0
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              <span>상세 필터</span>
+              {activeFilterCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] inline-flex items-center justify-center font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
+              <span className="text-[10px]">{isFilterExpanded ? "▲" : "▼"}</span>
+            </button>
+          </div>
+
+          {/* Active Filter Chips */}
+          {(filters.categoryL1 || filters.card || (filters.from && quickPeriod === "custom") || (filters.to && quickPeriod === "custom")) && (
+            <div className="flex items-center gap-1.5 flex-wrap mt-2.5 pt-2.5 border-t border-slate-100 text-xs">
+              <span className="text-[11px] font-medium text-slate-400">적용된 필터:</span>
+              {filters.categoryL1 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-medium text-[11px]">
+                  {filters.categoryL1}{filters.categoryL2 ? ` > ${filters.categoryL2}` : ""}
+                  <button
+                    type="button"
+                    onClick={() => setFilters(prev => ({ ...prev, categoryL1: "", categoryL2: "" }))}
+                    className="hover:text-blue-900"
+                  >
+                    ✕
+                  </button>
+                </span>
+              )}
+              {filters.card && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-[11px]">
+                  {cardList.find(c => String(c.id) === filters.card)?.cardName || filters.card.replace("method:", "")}
+                  <button
+                    type="button"
+                    onClick={() => setFilters(prev => ({ ...prev, card: "" }))}
+                    className="hover:text-slate-900"
+                  >
+                    ✕
+                  </button>
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="text-[11px] text-slate-400 hover:text-slate-600 underline ml-auto"
               >
-                <option value="">모두</option>
-                {getL1Categories().map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+                초기화
+              </button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                중분류
-              </label>
-              <select
-                value={filters.categoryL2}
-                onChange={(e) =>
-                  setFilters(prev => ({ ...prev, categoryL2: e.target.value }))
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded"
-                disabled={!filters.categoryL1}
-              >
-                <option value="">모두</option>
-                {filters.categoryL1 &&
-                  getL2Categories(filters.categoryL1).map((cat) => (
+          )}
+
+          {/* Collapsible Detailed Filter Panel */}
+          {isFilterExpanded && (
+            <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  시작 날짜
+                </label>
+                <input
+                  type="date"
+                  value={filters.from}
+                  onChange={(e) => {
+                    setQuickPeriod("custom");
+                    setFilters(prev => ({ ...prev, from: e.target.value }));
+                  }}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-base lg:text-sm bg-white min-h-[44px] lg:min-h-0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  종료 날짜
+                </label>
+                <input
+                  type="date"
+                  value={filters.to}
+                  onChange={(e) => {
+                    setQuickPeriod("custom");
+                    setFilters(prev => ({ ...prev, to: e.target.value }));
+                  }}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-base lg:text-sm bg-white min-h-[44px] lg:min-h-0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  대분류
+                </label>
+                <select
+                  value={filters.categoryL1}
+                  onChange={(e) =>
+                    setFilters(prev => ({ ...prev, categoryL1: e.target.value, categoryL2: "" }))
+                  }
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-base lg:text-sm bg-white min-h-[44px] lg:min-h-0"
+                >
+                  <option value="">모두</option>
+                  {getL1Categories().map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
                     </option>
                   ))}
-              </select>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  중분류
+                </label>
+                <select
+                  value={filters.categoryL2}
+                  onChange={(e) =>
+                    setFilters(prev => ({ ...prev, categoryL2: e.target.value }))
+                  }
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-base lg:text-sm bg-white min-h-[44px] lg:min-h-0"
+                  disabled={!filters.categoryL1}
+                >
+                  <option value="">모두</option>
+                  {filters.categoryL1 &&
+                    getL2Categories(filters.categoryL1).map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div className="col-span-2 lg:col-span-1">
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  결제수단
+                </label>
+                <select
+                  value={filters.card}
+                  onChange={(e) => setFilters(prev => ({ ...prev, card: e.target.value }))}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-base lg:text-sm bg-white min-h-[44px] lg:min-h-0"
+                >
+                  <option value="">모두</option>
+                  <optgroup label="결제수단">
+                    <option value="method:현금">현금</option>
+                    <option value="method:계좌이체">계좌이체</option>
+                    <option value="method:자동이체">자동이체</option>
+                    <option value="method:수동입력">수동입력 (기타)</option>
+                  </optgroup>
+                  <optgroup label="카드">
+                    {cardList.map((card) => (
+                      <option key={card.id} value={card.id}>
+                        {card.cardCompany} · {card.cardName}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                결제수단
-              </label>
-              <select
-                value={filters.card}
-                onChange={(e) => setFilters(prev => ({ ...prev, card: e.target.value }))}
-                className="w-full px-3 py-2 border border-slate-300 rounded"
-              >
-                <option value="">모두</option>
-                <optgroup label="결제수단">
-                  <option value="method:현금">현금</option>
-                  <option value="method:계좌이체">계좌이체</option>
-                  <option value="method:자동이체">자동이체</option>
-                  <option value="method:수동입력">수동입력 (기타)</option>
-                </optgroup>
-                <optgroup label="카드">
-                  {cardList.map((card) => (
-                    <option key={card.id} value={card.id}>
-                      {card.cardCompany} · {card.cardName}
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Table */}
@@ -264,143 +412,178 @@ export default function TransactionsPage() {
             <div className="p-8 text-center text-slate-600">거래 내역이 없습니다</div>
           ) : (
             <>
-              <div className="lg:hidden">
-                <div className="divide-y">
-                  {transactions.map((tx) => {
-                    const isEditing = editingId === tx.id;
-                    const display = getCardDisplayName(tx);
+              <div className="lg:hidden divide-y divide-slate-100">
+                {transactions.map((tx) => {
+                  const isEditing = editingId === tx.id;
+                  const display = getCardDisplayName(tx);
 
-                    return (
-                      <article key={tx.id} className="p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold text-slate-900 truncate">
+                  return (
+                    <article key={tx.id} className="p-3.5 hover:bg-slate-50/70 transition-colors">
+                      {/* Row 1: Merchant & Amount */}
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-bold text-slate-900 truncate">
+                            {tx.merchant}
+                          </h3>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500 flex-wrap">
+                            <span className="shrink-0">{tx.aggregationDate || tx.date}</span>
+                            <span className="text-slate-300">·</span>
+                            <span className="truncate max-w-[150px] font-medium text-slate-600">
                               {display.name}
-                            </div>
-                            <div className="text-xs text-slate-500">{display.company}</div>
-                          </div>
-                          <div className="text-sm font-bold text-slate-900 whitespace-nowrap">
-                            <Money value={tx.amount} />
+                            </span>
                           </div>
                         </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-sm font-bold text-slate-900 whitespace-nowrap tabular-nums">
+                            <Money value={tx.amount} />
+                          </div>
+                          <div className="flex justify-end gap-2 mt-1">
+                            <button
+                              type="button"
+                              onClick={() => (isEditing ? setEditingId(null) : handleEdit(tx))}
+                              className="text-xs text-blue-600 hover:text-blue-800 font-semibold px-2 py-0.5 rounded bg-blue-50"
+                            >
+                              {isEditing ? "닫기" : "편집"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(tx.id)}
+                              className="text-xs text-red-600 hover:text-red-800 font-semibold px-2 py-0.5 rounded bg-red-50"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      </div>
 
-                        <div className="mt-2 text-sm text-slate-700">
-                          {isEditing ? (
+                      {/* Row 2: Category & Necessity Badges */}
+                      {!isEditing && (
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+                          {tx.categoryL1 && (
+                            <span className="inline-flex px-2 py-0.5 rounded text-[11px] bg-blue-50 text-blue-700 font-medium">
+                              {tx.categoryL1}{tx.categoryL2 ? ` › ${tx.categoryL2}` : ""}
+                            </span>
+                          )}
+                          {tx.necessity &&
+                            tx.necessity !== "unset" &&
+                            NECESSITY_LABELS[tx.necessity] && (
+                              <span
+                                className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${NECESSITY_LABELS[tx.necessity].color}`}
+                              >
+                                {NECESSITY_LABELS[tx.necessity].label}
+                              </span>
+                            )}
+                          {tx.isCompanyExpense && (
+                            <span className="inline-flex px-2 py-0.5 rounded text-[11px] bg-violet-100 text-violet-700 font-medium">
+                              경비
+                            </span>
+                          )}
+                          {NON_CARD_METHODS[tx.cardCompany] && (
+                            <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${NON_CARD_METHODS[tx.cardCompany]}`}>
+                              {tx.cardCompany}
+                            </span>
+                          )}
+                          {tx.billingMonth && (
+                            <span className="text-[10px] text-slate-400">
+                              청구 {tx.billingMonth}
+                            </span>
+                          )}
+                          {tx.note && (
+                            <span className="text-slate-400 truncate max-w-[150px] text-[11px]">
+                              {tx.note}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Row 3: Inline Edit Panel (when editing) */}
+                      {isEditing && (
+                        <div className="mt-3 pt-3 border-t border-slate-100 space-y-2 bg-slate-50 p-3 rounded-lg">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">가맹점</label>
                             <input
                               type="text"
                               value={editData.merchant || ""}
                               onChange={(e) =>
                                 setEditData(prev => ({ ...prev, merchant: e.target.value }))
                               }
-                              className="w-full px-2 py-2 border border-slate-300 rounded text-sm"
+                              className="w-full px-2 py-1.5 border border-slate-300 rounded text-base lg:text-sm bg-white"
                             />
-                          ) : (
-                            <p className="leading-6">{tx.merchant}</p>
-                          )}
-                        </div>
-
-                        <div className="mt-2 text-xs text-slate-500 space-y-1">
-                          <div>
-                            거래일 {tx.aggregationDate || tx.date}
-                            {(tx.originalDate || tx.date) !== (tx.aggregationDate || tx.date) ? (
-                              <span className="ml-2">원거래일 {tx.originalDate || tx.date}</span>
-                            ) : null}
                           </div>
-                          {tx.billingMonth && (
-                            <div className="text-[11px] text-slate-400">
-                              청구월 {tx.billingMonth}
-                            </div>
-                          )}
-                        </div>
-
-                        {isEditing ? (
-                          <div className="mt-3 space-y-2">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">날짜</label>
                             <input
                               type="date"
                               value={editData.date || tx.originalDate || tx.date}
                               onChange={(e) =>
                                 setEditData(prev => ({ ...prev, date: e.target.value }))
                               }
-                              className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
+                              className="w-full border border-slate-300 rounded px-2 py-1.5 text-base lg:text-sm bg-white"
                             />
-                            <select
-                              value={editData.categoryL1 || ""}
-                              onChange={(e) =>
-                                setEditData(prev => ({
-                                  ...prev,
-                                  categoryL1: e.target.value,
-                                  categoryL2: "",
-                                  categoryL3: "",
-                                }))
-                              }
-                              className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
-                            >
-                              {getL1Categories().map((cat) => (
-                                <option key={cat} value={cat}>
-                                  {cat}
-                                </option>
-                              ))}
-                            </select>
-                            {editData.categoryL1 &&
-                              getL2Categories(editData.categoryL1).length > 0 && (
-                                <select
-                                  value={editData.categoryL2 || ""}
-                                  onChange={(e) =>
-                                    setEditData(prev => ({
-                                      ...prev,
-                                      categoryL2: e.target.value,
-                                      categoryL3: "",
-                                    }))
-                                  }
-                                  className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
-                                >
-                                  <option value="">-</option>
-                                  {getL2Categories(editData.categoryL1).map((cat) => (
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-xs font-medium text-slate-600 mb-1">대분류</label>
+                              <select
+                                value={editData.categoryL1 || ""}
+                                onChange={(e) =>
+                                  setEditData(prev => ({
+                                    ...prev,
+                                    categoryL1: e.target.value,
+                                    categoryL2: "",
+                                    categoryL3: "",
+                                  }))
+                                }
+                                className="w-full border border-slate-300 rounded px-2 py-1.5 text-base lg:text-sm bg-white"
+                              >
+                                {getL1Categories().map((cat) => (
+                                  <option key={cat} value={cat}>
+                                    {cat}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-slate-600 mb-1">중분류</label>
+                              <select
+                                value={editData.categoryL2 || ""}
+                                onChange={(e) =>
+                                  setEditData(prev => ({
+                                    ...prev,
+                                    categoryL2: e.target.value,
+                                    categoryL3: "",
+                                  }))
+                                }
+                                className="w-full border border-slate-300 rounded px-2 py-1.5 text-base lg:text-sm bg-white"
+                              >
+                                <option value="">-</option>
+                                {editData.categoryL1 &&
+                                  getL2Categories(editData.categoryL1).map((cat) => (
                                     <option key={cat} value={cat}>
                                       {cat}
                                     </option>
                                   ))}
-                                </select>
-                              )}
-                            {editData.categoryL1 &&
-                              editData.categoryL2 &&
-                              getL3Categories(
-                                editData.categoryL1,
-                                editData.categoryL2
-                              ).length > 0 && (
-                                <select
-                                  value={editData.categoryL3 || ""}
-                                  onChange={(e) =>
-                                    setEditData(prev => ({
-                                      ...prev,
-                                      categoryL3: e.target.value,
-                                    }))
-                                  }
-                                  className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
-                                >
-                                  <option value="">-</option>
-                                  {getL3Categories(editData.categoryL1, editData.categoryL2).map(
-                                    (cat) => (
-                                      <option key={cat} value={cat}>
-                                        {cat}
-                                      </option>
-                                    )
-                                  )}
-                                </select>
-                              )}
-                            <select
-                              value={editData.necessity || "unset"}
-                              onChange={(e) =>
-                                setEditData(prev => ({ ...prev, necessity: e.target.value }))
-                              }
-                              className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
-                            >
-                              <option value="unset">-</option>
-                              <option value="essential">필수</option>
-                              <option value="discretionary">재량</option>
-                              <option value="waste">과소비</option>
-                            </select>
-                            {familyMembers.length > 0 && (
+                              </select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-xs font-medium text-slate-600 mb-1">소비유형</label>
+                              <select
+                                value={editData.necessity || "unset"}
+                                onChange={(e) =>
+                                  setEditData(prev => ({ ...prev, necessity: e.target.value }))
+                                }
+                                className="w-full border border-slate-300 rounded px-2 py-1.5 text-base lg:text-sm bg-white"
+                              >
+                                <option value="unset">-</option>
+                                <option value="essential">필수</option>
+                                <option value="discretionary">재량</option>
+                                <option value="waste">과소비</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-slate-600 mb-1">구성원</label>
                               <select
                                 value={editData.familyMemberId || ""}
                                 onChange={(e) =>
@@ -409,113 +592,50 @@ export default function TransactionsPage() {
                                     familyMemberId: e.target.value ? Number(e.target.value) : null,
                                   }))
                                 }
-                                className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
+                                className="w-full border border-slate-300 rounded px-2 py-1.5 text-base lg:text-sm bg-white"
                               >
-                                <option value="">구성원</option>
+                                <option value="">-</option>
                                 {familyMembers.map((m) => (
                                   <option key={m.id} value={m.id}>
-                                    {m.name} ({m.relation})
+                                    {m.name}
                                   </option>
                                 ))}
                               </select>
-                            )}
-                            {tripList.length > 0 && (
-                              <select
-                                value={editData.tripId || ""}
-                                onChange={(e) =>
-                                  setEditData(prev => ({
-                                    ...prev,
-                                    tripId: e.target.value ? Number(e.target.value) : null,
-                                  }))
-                                }
-                                className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
-                              >
-                                <option value="">여행</option>
-                                {tripList.map((t) => (
-                                  <option key={t.id} value={t.id}>
-                                    {t.name}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-                            <label className="flex items-center gap-1 text-xs text-slate-600 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={!!editData.isCompanyExpense}
-                                onChange={(e) =>
-                                  setEditData(prev => ({
-                                    ...prev,
-                                    isCompanyExpense: e.target.checked,
-                                  }))
-                                }
-                                className="rounded border-slate-300"
-                              />
-                              회사경비
-                            </label>
-                            <div className="flex gap-2 pt-1">
-                              <button
-                                onClick={handleSave}
-                                className="min-h-[44px] flex-1 px-3 py-2 text-sm font-semibold text-emerald-700 bg-emerald-50 rounded-lg"
-                              >
-                                저장
-                              </button>
-                              <button
-                                onClick={() => setEditingId(null)}
-                                className="min-h-[44px] flex-1 px-3 py-2 text-sm font-semibold text-slate-600 bg-slate-50 rounded-lg"
-                              >
-                                취소
-                              </button>
                             </div>
                           </div>
-                        ) : (
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <span className="inline-flex px-2 py-1 rounded text-xs bg-blue-100 text-blue-700 font-medium">
-                              {tx.categoryL1}
-                            </span>
-                            {tx.categoryL2 && (
-                              <span className="inline-flex px-2 py-1 rounded text-xs bg-blue-50 text-blue-600">
-                                {tx.categoryL2}
-                              </span>
-                            )}
-                            {tx.necessity &&
-                              tx.necessity !== "unset" &&
-                              NECESSITY_LABELS[tx.necessity] && (
-                                <span
-                                  className={`inline-flex px-2 py-1 rounded text-xs font-medium ${NECESSITY_LABELS[tx.necessity].color}`}
-                                >
-                                  {NECESSITY_LABELS[tx.necessity].label}
-                                </span>
-                              )}
-                            {tx.isCompanyExpense && (
-                              <span className="inline-flex px-2 py-1 rounded text-xs bg-violet-100 text-violet-700">
-                                경비
-                              </span>
-                            )}
-                            {NON_CARD_METHODS[tx.cardCompany] ? (
-                              <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${NON_CARD_METHODS[tx.cardCompany]}`}>
-                                {tx.cardCompany}
-                              </span>
-                            ) : null}
-                            <div className="w-full mt-1 border-t pt-3 flex justify-end gap-2 text-sm">
-                              <button
-                                onClick={() => handleEdit(tx)}
-                                className="min-h-[40px] px-4 rounded bg-blue-600 text-white"
-                              >
-                                편집
-                              </button>
-                              <button
-                                onClick={() => handleDelete(tx.id)}
-                                className="min-h-[40px] px-4 rounded bg-red-50 text-red-700"
-                              >
-                                삭제
-                              </button>
-                            </div>
+                          <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer pt-1">
+                            <input
+                              type="checkbox"
+                              checked={!!editData.isCompanyExpense}
+                              onChange={(e) =>
+                                setEditData(prev => ({
+                                  ...prev,
+                                  isCompanyExpense: e.target.checked,
+                                }))
+                              }
+                              className="rounded border-slate-300"
+                            />
+                            회사경비로 처리
+                          </label>
+                          <div className="flex gap-2 pt-2">
+                            <button
+                              onClick={handleSave}
+                              className="min-h-[40px] flex-1 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg"
+                            >
+                              저장
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              className="min-h-[40px] flex-1 px-3 py-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-300 rounded-lg"
+                            >
+                              취소
+                            </button>
                           </div>
-                        )}
-                      </article>
-                    );
-                  })}
-                </div>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
               </div>
 
               <div className="hidden lg:block overflow-x-auto">
