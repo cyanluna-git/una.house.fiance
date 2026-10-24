@@ -139,7 +139,6 @@ export default function CardsPage() {
 
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const isCurrentMonth = usageMonth === currentMonth;
   const usageMonthLabel = usageMonth
     ? `${parseInt(usageMonth.split("-")[1], 10)}월`
     : "이번달";
