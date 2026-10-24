@@ -178,6 +178,7 @@ export interface DashboardResponse {
   // Chart data
   categoryBreakdown: { category: string; amount: number; count: number }[];
   necessityBreakdown: { label: string; amount: number }[];
+  necessityTrend: { month: string; essential: number; discretionary: number; waste: number; unset: number }[];
   familyBreakdown: { name: string; amount: number }[];
   incomeExpenseData: { month: string; income: number; expense: number }[];
   trendData: { month: string; amount: number }[];

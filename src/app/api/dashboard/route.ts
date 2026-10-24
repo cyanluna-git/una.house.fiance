@@ -228,6 +228,30 @@ export async function GET(request: NextRequest) {
       amount: r.amount,
     }));
 
+    // ── 7b. Necessity monthly trend (year filter applies; month filter -> whole year/all) ──
+    const necTrendWhere = year ? `WHERE ${monthExpr} LIKE ?` : "";
+    const necTrendParams: string[] = year ? [`${year}-%`] : [];
+    type NecTrendRow = { month: string; necessity: string; amount: number };
+    const necTrendRows = sqlite
+      .prepare(
+        `SELECT ${monthExpr} AS month,
+                COALESCE(necessity,'unset') AS necessity,
+                SUM(ABS(amount)) AS amount
+         FROM transactions
+         ${necTrendWhere}
+         GROUP BY month, COALESCE(necessity,'unset')
+         ORDER BY month`
+      )
+      .all(...necTrendParams) as NecTrendRow[];
+    const necTrendMap = new Map<string, { month: string; essential: number; discretionary: number; waste: number; unset: number }>();
+    for (const r of necTrendRows) {
+      if (!r.month) continue;
+      const row = necTrendMap.get(r.month) ?? { month: r.month, essential: 0, discretionary: 0, waste: 0, unset: 0 };
+      if (r.necessity in row) (row as Record<string, number | string>)[r.necessity] = r.amount;
+      necTrendMap.set(r.month, row);
+    }
+    const necessityTrend = Array.from(necTrendMap.values()).sort((x, y) => x.month.localeCompare(y.month));
+
     // ── 8. Family breakdown ───────────────────────────────────────────────
     type FamilyRow = { familyMemberId: number | null; amount: number };
     const familyRows = sqlite
@@ -403,6 +427,7 @@ export async function GET(request: NextRequest) {
       momChange,
       categoryBreakdown,
       necessityBreakdown,
+      necessityTrend,
       familyBreakdown,
       incomeExpenseData,
       trendData,
