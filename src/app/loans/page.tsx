@@ -112,7 +112,30 @@ export default function LoansPage() {
     try {
       const res = await fetch("/api/loans");
       const data = await res.json();
-      setLoans(data.data || []);
+      // API(drizzle)는 camelCase로 응답하므로 화면용 snake_case로 변환
+      const rows = (data.data || []) as Record<string, unknown>[];
+      setLoans(
+        rows.map((r) => ({
+          id: r.id,
+          loan_type: r.loanType ?? r.loan_type,
+          loan_name: r.loanName ?? r.loan_name,
+          purpose: r.purpose ?? null,
+          lender: r.lender,
+          repay_institution: r.repayInstitution ?? r.repay_institution ?? null,
+          original_amount: Number(r.originalAmount ?? r.original_amount ?? 0),
+          outstanding_amount: Number(r.outstandingAmount ?? r.outstanding_amount ?? 0),
+          interest_rate: Number(r.interestRate ?? r.interest_rate ?? 0),
+          rate_type: r.rateType ?? r.rate_type,
+          variable_period_months: r.variablePeriodMonths ?? r.variable_period_months ?? null,
+          variable_next_rate: r.variableNextRate ?? r.variable_next_rate ?? null,
+          repay_method: r.repayMethod ?? r.repay_method ?? null,
+          monthly_payment: r.monthlyPayment ?? r.monthly_payment ?? null,
+          payment_day: r.paymentDay ?? r.payment_day ?? null,
+          start_date: r.startDate ?? r.start_date ?? null,
+          end_date: r.endDate ?? r.end_date ?? null,
+          note: r.note ?? null,
+        })) as LoanData[]
+      );
     } catch {
       setMessage({ type: "error", text: "오류가 발생했습니다. 다시 시도해 주세요." });
     } finally {
