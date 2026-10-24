@@ -358,6 +358,95 @@ sqlite.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS uq_asset_snapshots_account_date ON asset_snapshots(account_id, snapshot_date);
 `);
 
+// Auto-sync card benefits and targets if empty
+try {
+  sqlite.exec(`
+    UPDATE cards SET
+      card_name = '쿠팡 와우 카드',
+      annual_fee = 20000,
+      monthly_target = 0,
+      monthly_discount_limit = 40000,
+      main_benefits = '쿠팡/쿠팡이츠/쿠팡플레이 최대 4% 적립(월 최대 4만P), 기타 가맹점 2.4% 적립, 전월실적 없음',
+      note = '명세서 표기: 비자 400'
+    WHERE id = 1 AND (annual_fee = 0 OR annual_fee IS NULL);
+
+    UPDATE cards SET
+      card_name = 'KT할부Plus NH농협카드',
+      annual_fee = 20000,
+      monthly_target = 300000,
+      monthly_discount_limit = 17000,
+      main_benefits = 'KT 단말기 장기할부 및 통신요금 12,000원~17,000원 청구할인',
+      note = '명세서 표기: L555'
+    WHERE id = 2 AND (annual_fee = 0 OR annual_fee IS NULL);
+
+    UPDATE cards SET
+      card_name = 'KT Super DC',
+      annual_fee = 25000,
+      monthly_target = 300000,
+      monthly_discount_limit = 20000,
+      main_benefits = 'KT 유무선 통신요금 자동이체 시 10,000~20,000원 결제일 청구할인',
+      note = '명세서 표기: 본인KT프리미엄슈퍼'
+    WHERE id = 3 AND (annual_fee = 0 OR annual_fee IS NULL);
+
+    UPDATE cards SET
+      card_name = '디지로카 라스베가스',
+      annual_fee = 20000,
+      monthly_target = 0,
+      monthly_discount_limit = 100000,
+      main_benefits = '국내외 결제금액별 0.5~2% 청구할인 (50만원 이상 2%), 5만원 이상 무이자 할부',
+      note = '명세서 표기: 본인라스베가스'
+    WHERE id = 4 AND (annual_fee = 0 OR annual_fee IS NULL);
+
+    UPDATE cards SET
+      card_name = '신한카드',
+      annual_fee = 15000,
+      monthly_target = 300000,
+      monthly_discount_limit = 20000,
+      main_benefits = '생활/외식/쇼핑 청구할인',
+      note = '명세서 표기: 본인202'
+    WHERE id = 5 AND (annual_fee = 0 OR annual_fee IS NULL);
+
+    UPDATE cards SET
+      card_name = 'U+ X 우리카드',
+      card_number = '9771',
+      annual_fee = 25000,
+      monthly_target = 400000,
+      monthly_discount_limit = 28000,
+      main_benefits = 'LG U+ 통신요금 자동납부/장기할부 25,000~28,000원 청구할인',
+      note = '명세서 표기: 우리카드 9771'
+    WHERE id = 6 AND (annual_fee = 0 OR annual_fee IS NULL);
+
+    UPDATE cards SET
+      card_name = '후불하이패스',
+      annual_fee = 2000,
+      monthly_target = 0,
+      monthly_discount_limit = 0,
+      main_benefits = '고속도로 통행료 후불결제 (모카드 M3 BOOST 연동)',
+      note = '명세서 표기: 본인 M3 하이패스'
+    WHERE id = 7 AND (annual_fee = 0 OR annual_fee IS NULL);
+
+    UPDATE cards SET
+      card_name = 'M3 BOOST',
+      annual_fee = 90000,
+      monthly_target = 500000,
+      monthly_discount_limit = 20000,
+      main_benefits = '업종별 0.5~3% M포인트 적립(100만 이상 1.5배, 200만 2배), 온라인/해외 5% 특별적립, 100만 이상 1만 보너스P, 주말 무료주차',
+      note = '명세서 표기: 본인 M3 BOOST'
+    WHERE id = 8 AND (annual_fee = 0 OR annual_fee IS NULL);
+
+    UPDATE cards SET
+      card_name = '아산페이',
+      card_type = '체크',
+      annual_fee = 0,
+      monthly_target = 0,
+      monthly_discount_limit = 30000,
+      main_benefits = '아산시 지역화폐 충전 시 10% 인센티브(할인구매), 전통시장 및 가맹점 소득공제 30%'
+    WHERE id = 9 AND (monthly_discount_limit IS NULL);
+  `);
+} catch (cardSyncErr) {
+  console.warn("Card sync failed:", cardSyncErr);
+}
+
 // Auto-seed category_rules if empty
 const ruleCount = sqlite.prepare("SELECT COUNT(*) as cnt FROM category_rules").get() as { cnt: number };
 if (ruleCount.cnt === 0) {
