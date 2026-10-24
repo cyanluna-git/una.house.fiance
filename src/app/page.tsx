@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import PeriodFilter from "@/components/PeriodFilter";
 import YearComparison from "@/components/YearComparison";
+import WealthPanel from "@/components/WealthPanel";
 import type { Transaction, DashboardResponse } from "@/types";
 
 const DashboardCharts = dynamic(() => import("@/components/DashboardCharts"), {
@@ -33,6 +34,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showMoreCharts, setShowMoreCharts] = useState(false);
+  const [tab, setTab] = useState<"spend" | "wealth">("spend");
 
   // Fetch dashboard aggregated data whenever selectedMonth changes
   useEffect(() => {
@@ -167,6 +169,24 @@ export default function Home() {
     <div className="p-4 lg:p-6">
       <div className="lg:max-w-7xl lg:mx-auto">
 
+        {/* 탭: 소비 / 자산·대출 */}
+        <div className="flex gap-1 mb-4 border-b border-slate-200" role="tablist">
+          {([["spend", "소비"], ["wealth", "자산·대출"]] as const).map(([k, label]) => (
+            <button
+              key={k}
+              role="tab"
+              aria-selected={tab === k}
+              onClick={() => setTab(k)}
+              className={`px-4 py-2 text-sm font-medium min-h-[44px] lg:min-h-0 border-b-2 -mb-px ${
+                tab === k ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {tab === "wealth" && <WealthPanel />}
+
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" aria-live="assertive">
             {error}
@@ -174,7 +194,7 @@ export default function Home() {
         )}
 
         {/* ===== MOBILE HERO (lg:hidden) ===== */}
-        <div className="lg:hidden space-y-4">
+        <div className={`lg:hidden space-y-4 ${tab === "wealth" ? "!hidden" : ""}`}>
           {/* Month selector - mobile */}
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-slate-900">대시보드</h1>
@@ -316,7 +336,7 @@ export default function Home() {
         {/* ===== END MOBILE HERO ===== */}
 
         {/* ===== DESKTOP CONTENT (hidden on mobile) ===== */}
-        <div className="hidden lg:block">
+        <div className={`hidden ${tab === "wealth" ? "" : "lg:block"}`}>
         {/* Header with Month Selector */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
