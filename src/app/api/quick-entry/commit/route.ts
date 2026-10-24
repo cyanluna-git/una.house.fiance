@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
     if (!Array.isArray(entries) || !entries.length) {
       return NextResponse.json({ error: "저장할 항목이 없습니다" }, { status: 400 });
     }
-    const { savedIds, skipped } = saveQuickEntries(entries, sourceType);
-    return NextResponse.json({ success: true, savedCount: savedIds.length, savedIds, skipped });
+    const { savedIds, skipped, results } = saveQuickEntries(entries, sourceType);
+    return NextResponse.json({ success: true, savedCount: savedIds.length, savedIds, skipped, results });
   } catch (error) {
     console.error("POST /api/quick-entry/commit error:", error);
     return NextResponse.json({ error: "저장 실패", errorId: crypto.randomUUID() }, { status: 500 });

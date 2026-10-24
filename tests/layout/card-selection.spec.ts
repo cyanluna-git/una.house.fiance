@@ -32,3 +32,21 @@ test("receipt review selects active products and submits the selected card", asy
   expect(saved).toMatchObject({ cardId: 101, cardCompany: "Test issuer", cardName: "Active product" });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test("receipt last four uniquely preselects an active product", async ({ page }) => {
+  await page.request.post("/api/auth/unlock", { data: { key: "layout-test-key" } });
+  await page.route("**/api/cards", r => r.fulfill({ json: { data: [
+    { id: 101, cardCompany: "Test issuer", cardName: "Unique product", cardNumber: "1234", isActive: true },
+    { id: 102, cardCompany: "Test issuer", cardName: "Other product", cardNumber: "5678", isActive: true },
+  ] } }));
+  await page.route("**/api/quick-entry/receipt", r => r.fulfill({ json: { entries: [{
+    date: "2026-10-24", merchant: "Auto shop", amount: 1000, cardCompany: "Test issuer", cardLast4: "1234", categoryL1: "기타", categoryL2: "", categoryL3: "", necessity: "unset", duplicate: { level: "none", reason: "" },
+  }] } }));
+  await page.goto("/quick");
+  await page.getByRole("button", { name: "영수증 사진", exact: true }).click();
+  await page.locator('input[type="file"]').setInputFiles({ name: "receipt.png", mimeType: "image/png", buffer: Buffer.from("test") });
+  await page.getByRole("button", { name: /분석/ }).click();
+  await expect(page.getByText("Unique product", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "수정", exact: true }).click();
+  await expect(page.getByLabel("카드", { exact: true })).toHaveValue("101");
+});

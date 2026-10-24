@@ -26,6 +26,7 @@ export interface SaveEntry {
 }
 
 export interface SaveResult {
+  results: { index: number; status: "saved" | "skipped"; transactionId?: number; reason?: string }[];
   savedIds: number[];
   skipped: { index: number; reason: string }[];
 }
@@ -43,6 +44,7 @@ export function saveQuickEntries(entries: SaveEntry[], sourceType: "sms" | "rece
       ON CONFLICT(date, merchant, amount, card_company) DO NOTHING
     `);
 
+  const results: SaveResult["results"] = [];
   const savedIds: number[] = [];
   const skipped: { index: number; reason: string }[] = [];
 
@@ -86,11 +88,16 @@ export function saveQuickEntries(entries: SaveEntry[], sourceType: "sms" | "rece
         e.categoryL1, e.categoryL2 || "", e.categoryL3 || "", e.necessity || "unset",
         e.note || null, sourceType, finalCardId, approvalNo,
       );
-      if (r.changes > 0) savedIds.push(Number(r.lastInsertRowid));
+      if (r.changes > 0) {
+        savedIds.push(Number(r.lastInsertRowid));
+        results.push({ index, status: "saved", transactionId: Number(r.lastInsertRowid) });
+      }
       else skipped.push({ index, reason: "중복: 동일 거래가 이미 존재합니다" });
     });
   });
   run();
 
-  return { savedIds, skipped };
+  for (const item of skipped) results.push({ ...item, status: "skipped" });
+  results.sort((a, b) => a.index - b.index);
+  return { savedIds, skipped, results };
 }

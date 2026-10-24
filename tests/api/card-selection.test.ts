@@ -72,3 +72,22 @@ test("edit rejects invalid/inactive cards and preserves an existing inactive lin
   expect((await request(`/api/transactions/${id}`, "PATCH", { cardId: null, cardCompany: "현금", cardName: "현금" })).status).toBe(200);
   expect(await transaction(id)).toMatchObject({ cardId: null, cardCompany: "현금", cardName: "현금" });
 });
+
+ test("zero fee cards are never renamed on database initialization", async () => {
+  const res = await request("/api/cards", "POST", { cardCompany: "Preserve", cardName: "Free product", annualFee: 0 });
+  const { id } = await res.json();
+  const list = await (await request("/api/cards")).json();
+  expect(list.data.find((c: { id: number }) => c.id === id)).toMatchObject({ cardName: "Free product", annualFee: 0, verificationStatus: "unverified" });
+});
+
+test("card evidence metadata round-trips and numeric zero stays distinct from unknown", async () => {
+  const fields = { verificationStatus: "verified", sourceUrl: "https://example.com/card", verifiedAt: "2026-10-24", promotionBenefits: "Temporary offer until 2026-12-31", limitDetails: "Special points only; 20000 points/month", monthlyTarget: 0, monthlyDiscountLimit: 0 };
+  expect((await request(`/api/cards/${activeId}`, "PUT", fields)).status).toBe(200);
+  const list = await (await request("/api/cards")).json();
+  expect(list.data.find((c: { id: number }) => c.id === activeId)).toMatchObject(fields);
+});
+
+test("verified metadata requires official source and date", async () => {
+  expect((await request(`/api/cards/${activeId}`, "PUT", { verificationStatus: "verified", sourceUrl: "", verifiedAt: "" })).status).toBe(400);
+  expect((await request(`/api/cards/${activeId}`, "PUT", { sourceUrl: "javascript:alert(1)" })).status).toBe(400);
+});

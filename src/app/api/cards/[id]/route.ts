@@ -1,3 +1,4 @@
+import { validateCardEvidence } from "@/lib/card-evidence";
 import { NextRequest, NextResponse } from "next/server";
 import { db, sqlite } from "@/lib/db";
 import { cards } from "@/lib/db/schema";
@@ -21,6 +22,8 @@ export async function PUT(
     }
 
     const body = await request.json();
+    const evidenceError = validateCardEvidence({ ...existing, ...body });
+    if (evidenceError) return NextResponse.json({ error: evidenceError }, { status: 400 });
 
     db.update(cards)
       .set({
@@ -33,11 +36,16 @@ export async function PUT(
         issueDate: body.issueDate !== undefined ? body.issueDate || null : existing.issueDate,
         expiryDate: body.expiryDate !== undefined ? body.expiryDate || null : existing.expiryDate,
         monthlyTarget: body.monthlyTarget !== undefined
-          ? (body.monthlyTarget ? Number(body.monthlyTarget) : null)
+          ? (body.monthlyTarget !== "" && body.monthlyTarget != null ? Number(body.monthlyTarget) : null)
           : existing.monthlyTarget,
         monthlyDiscountLimit: body.monthlyDiscountLimit !== undefined
-          ? (body.monthlyDiscountLimit ? Number(body.monthlyDiscountLimit) : null)
+          ? (body.monthlyDiscountLimit !== "" && body.monthlyDiscountLimit != null ? Number(body.monthlyDiscountLimit) : null)
           : existing.monthlyDiscountLimit,
+        sourceUrl: body.sourceUrl !== undefined ? body.sourceUrl || null : existing.sourceUrl,
+        verifiedAt: body.verifiedAt !== undefined ? body.verifiedAt || null : existing.verifiedAt,
+        promotionBenefits: body.promotionBenefits !== undefined ? body.promotionBenefits || null : existing.promotionBenefits,
+        limitDetails: body.limitDetails !== undefined ? body.limitDetails || null : existing.limitDetails,
+        verificationStatus: body.verificationStatus ?? existing.verificationStatus,
         mainBenefits: body.mainBenefits !== undefined ? body.mainBenefits || null : existing.mainBenefits,
         familyMemberId: body.familyMemberId !== undefined
           ? (body.familyMemberId ? Number(body.familyMemberId) : null)

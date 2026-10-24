@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getL2Categories, getL3Categories } from "@/lib/categories";
 import QuickCategoryPicker from "@/components/QuickCategoryPicker";
+import { matchCard } from "@/lib/card-matcher";
 import type { CardInfo } from "@/types";
 import Button from "@/components/Button";
 
@@ -14,6 +15,7 @@ import Button from "@/components/Button";
 type DupLevel = "exact" | "likely" | "possible" | "none";
 
 interface Entry {
+  saveError?: string;
   key: string; // 클라이언트 식별자
   date: string;
   merchant: string;
@@ -96,6 +98,12 @@ export default function QuickEntryPage() {
   }, []);
   const [result, setResult] = useState<string | null>(null);
 
+  const autoMatch = (entry: Entry): Entry => {
+    if (entry.cardId) return entry;
+    const match = matchCard(cardList, entry);
+    return match.status === "matched" ? { ...entry, cardId: match.card.id, cardCompany: match.card.cardCompany, cardName: match.card.cardName } : entry;
+  };
+
   const update = (key: string, patch: Partial<Entry>) =>
     setEntries((prev) => prev.map((e) => (e.key === key ? { ...e, ...patch } : e)));
 
@@ -122,7 +130,7 @@ export default function QuickEntryPage() {
         force: false,
         duplicate: e.duplicate ?? { level: "none", reason: "" },
       }));
-      setEntries((prev) => [...next, ...prev]);
+      setEntries((prev) => [...next.map(autoMatch), ...prev]);
       if (!next.length) setError("거래를 찾지 못했습니다");
     } catch (e) {
       setError((e as Error).message);
@@ -165,7 +173,7 @@ export default function QuickEntryPage() {
           });
         }
       }
-      setEntries((prev) => [...added, ...prev]);
+      setEntries((prev) => [...added.map(autoMatch), ...prev]);
     } finally {
       setProgress("");
       setBusy(false);
@@ -205,7 +213,7 @@ export default function QuickEntryPage() {
           });
         }
       }
-      setEntries((prev) => [...added, ...prev]);
+      setEntries((prev) => [...added.map(autoMatch), ...prev]);
     } finally {
       setProgress("");
       setBusy(false);
@@ -259,10 +267,23 @@ export default function QuickEntryPage() {
         if (!res.ok) throw new Error(data.error || "저장 실패");
         saved += data.savedCount;
         skipped.push(...(data.skipped ?? []));
+        const results: { index: number; status: string; reason?: string }[] = data.results ??
+          (data.savedCount + (data.skipped?.length ?? 0) === groups[src].length
+            ? groups[src].map((_, index) => {
+                const failed = data.skipped?.find((item: { index: number }) => item.index === index);
+                return { index, status: failed ? "skipped" : "saved", reason: failed?.reason };
+              }) : []);
+        const byKey = new Map(results.map((item) => [groups[src][item.index]?.key, item]));
+        setEntries(prev => prev.flatMap(entry => {
+          const outcome = byKey.get(entry.key);
+          if (outcome?.status === "saved") return [];
+          if (outcome) return [{ ...entry, saveError: outcome.reason || "저장되지 않았습니다" }];
+          return [entry];
+        }));
+        setResult(`저장 ${saved}건 · 건너뜀 ${skipped.length}건`);
       }
 
-      const savedKeys = new Set(chosen.map((e) => e.key));
-      setEntries((prev) => prev.filter((e) => !savedKeys.has(e.key)));
+
       setResult(`저장 ${saved}건 · 건너뜀 ${skipped.length}건${skipped.length ? ` (${skipped[0].reason}${skipped.length > 1 ? " 외" : ""})` : ""}`);
     } catch (e) {
       setError((e as Error).message);
@@ -364,6 +385,7 @@ export default function QuickEntryPage() {
             <EntryCard
               key={e.key}
               entry={e}
+              disabled={busy}
               cards={cardList}
               onChange={(patch) => update(e.key, patch)}
               onRemove={() => setEntries((prev) => prev.filter((x) => x.key !== e.key))}
@@ -381,11 +403,13 @@ export default function QuickEntryPage() {
 
 function EntryCard({
   entry: e,
+  disabled,
   cards,
   onChange,
   onRemove,
 }: {
   entry: Entry;
+  disabled: boolean;
   cards: CardInfo[];
   onChange: (patch: Partial<Entry>) => void;
   onRemove: () => void;
@@ -396,7 +420,7 @@ function EntryCard({
   const l3s = getL3Categories(e.categoryL1, e.categoryL2);
 
   return (
-    <div className={`min-w-0 rounded-lg border p-3 text-sm ${block ? "border-slate-200 bg-slate-50" : "border-slate-300 bg-white"}`}>
+    <fieldset disabled={disabled} className={`min-w-0 rounded-lg border p-3 text-sm ${block ? "border-slate-200 bg-slate-50" : "border-slate-300 bg-white"}`}>
       <div className="flex items-start gap-2">
         <input
           type="checkbox"
@@ -414,6 +438,7 @@ function EntryCard({
             {e.approvalNo && <span className="whitespace-nowrap text-xs text-slate-400">승인 {e.approvalNo}</span>}
           </div>
 
+          {e.saveError && <p role="alert" className="text-sm text-red-700">{e.saveError}</p>}
           <div className="flex flex-wrap gap-1 text-xs">
             {e.duplicate.level === "exact" && <Tag color="red">이미 저장됨</Tag>}
             {e.duplicate.level === "likely" && <Tag color="amber">중복 의심</Tag>}
@@ -526,7 +551,7 @@ function EntryCard({
           </div>
         </div>
       </div>
-    </div>
+    </fieldset>
   );
 }
 

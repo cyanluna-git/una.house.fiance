@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
           merchant: t.merchant,
           amount: t.amount,
           cardCompany,
+          cardName: t.card,
           time: t.time,
           note: [t.time ? `시각 ${t.time}` : null, "목록화면"].filter(Boolean).join(" · "),
           ...cat,

@@ -98,6 +98,11 @@ const emptyForm = {
   expiryDate: "",
   monthlyTarget: "",
   monthlyDiscountLimit: "",
+  verificationStatus: "unverified",
+  sourceUrl: "",
+  verifiedAt: "",
+  promotionBenefits: "",
+  limitDetails: "",
   mainBenefits: "",
   familyMemberId: "",
   note: "",
@@ -220,10 +225,15 @@ export default function CardsPage() {
       annualFee: card.annualFee ? String(card.annualFee) : "",
       issueDate: normalizeToFirstOfMonth(card.issueDate || ""),
       expiryDate: normalizeToFirstOfMonth(card.expiryDate || ""),
-      monthlyTarget: card.monthlyTarget ? String(card.monthlyTarget) : "",
-      monthlyDiscountLimit: card.monthlyDiscountLimit
+      monthlyTarget: card.monthlyTarget != null ? String(card.monthlyTarget) : "",
+      monthlyDiscountLimit: card.monthlyDiscountLimit != null
         ? String(card.monthlyDiscountLimit)
         : "",
+      verificationStatus: card.verificationStatus || "unverified",
+      sourceUrl: card.sourceUrl || "",
+      verifiedAt: card.verifiedAt || "",
+      promotionBenefits: card.promotionBenefits || "",
+      limitDetails: card.limitDetails || "",
       mainBenefits: card.mainBenefits || "",
       familyMemberId: card.familyMemberId ? String(card.familyMemberId) : "",
       note: card.note || "",
@@ -389,6 +399,16 @@ export default function CardsPage() {
           />
         </FormField>
 
+        <FormField label="검증 상태">
+          <select value={data.verificationStatus} onChange={e => setData(prev => ({ ...prev, verificationStatus: e.target.value }))} className="w-full rounded border p-2 text-base">
+            <option value="unverified">미검증</option><option value="verified">확인 완료</option>
+          </select>
+        </FormField>
+        {([ ["sourceUrl", "공식 출처 URL"], ["verifiedAt", "확인일"], ["promotionBenefits", "기간 한정 혜택 (기간 포함)"], ["limitDetails", "한도 대상·단위·기간"] ] as const).map(([key, label]) => (
+          <FormField key={key} label={label}>
+            <input type={key === "verifiedAt" ? "date" : key === "sourceUrl" ? "url" : "text"} value={data[key]} onChange={e => setData(prev => ({ ...prev, [key]: e.target.value }))} className="w-full min-w-0 rounded border p-2 text-base" />
+          </FormField>
+        ))}
         <FormField label="메모" className="md:col-span-3">
           <textarea
             value={data.note}
@@ -516,17 +536,23 @@ export default function CardsPage() {
                   </div>
                   <div>
                     <span className="text-slate-500">실적 기준:</span>{" "}
-                    {card.monthlyTarget
-                      ? `${card.monthlyTarget.toLocaleString()}원`
+                    {card.monthlyTarget != null
+                      ? card.monthlyTarget === 0 ? "조건 없음" : `${card.monthlyTarget.toLocaleString()}원`
                       : "-"}
                   </div>
                   <div>
                     <span className="text-slate-500">할인한도:</span>{" "}
-                    {card.monthlyDiscountLimit
-                      ? `${card.monthlyDiscountLimit.toLocaleString()}원`
+                    {card.monthlyDiscountLimit != null
+                      ? card.monthlyDiscountLimit === 0 ? "0 (상세 조건 확인)" : `${card.monthlyDiscountLimit.toLocaleString()} (단위·대상 확인)`
                       : "-"}
                   </div>
                 </div>
+                <div className="mb-2 text-sm text-slate-600">
+                  {card.verificationStatus === "verified" ? `확인 완료 · ${card.verifiedAt || "날짜 미등록"}` : "미검증 · 기존 정보는 공식 자료 확인이 필요합니다"}
+                  {card.sourceUrl && /^https?:\/\//.test(card.sourceUrl) && <a href={card.sourceUrl} target="_blank" rel="noopener noreferrer" className="ml-2 underline">출처</a>}
+                </div>
+                {card.promotionBenefits && <p className="mb-2 text-sm">기간 한정: {card.promotionBenefits}</p>}
+                {card.limitDetails && <p className="mb-2 text-sm">한도 조건: {card.limitDetails}</p>}
                 {card.mainBenefits && (
                   <div className="text-sm text-slate-600 mb-3">
                     <span className="text-slate-500">혜택:</span>{" "}

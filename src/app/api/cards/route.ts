@@ -1,3 +1,4 @@
+import { validateCardEvidence } from "@/lib/card-evidence";
 import { NextRequest, NextResponse } from "next/server";
 import { db, sqlite } from "@/lib/db";
 import { cards } from "@/lib/db/schema";
@@ -6,37 +7,6 @@ import { desc } from "drizzle-orm";
 // GET /api/cards
 export async function GET(request: NextRequest) {
   try {
-    // Ensure unlinked transactions are matched to registered cards
-    try {
-      sqlite
-        .prepare(
-          `UPDATE transactions
-           SET card_id = (
-             SELECT c.id FROM cards c
-             WHERE c.card_company = transactions.card_company
-               AND (
-                 transactions.card_name = c.card_name
-                 OR REPLACE(REPLACE(transactions.card_name, '본인', ''), ' ', '') = REPLACE(REPLACE(c.card_name, '본인', ''), ' ', '')
-                 OR (c.card_number IS NOT NULL AND transactions.card_name LIKE '%' || REPLACE(c.card_number, '''', '') || '%')
-               )
-             LIMIT 1
-           )
-           WHERE card_id IS NULL
-             AND EXISTS (
-               SELECT 1 FROM cards c
-               WHERE c.card_company = transactions.card_company
-                 AND (
-                   transactions.card_name = c.card_name
-                   OR REPLACE(REPLACE(transactions.card_name, '본인', ''), ' ', '') = REPLACE(REPLACE(c.card_name, '본인', ''), ' ', '')
-                   OR (c.card_number IS NOT NULL AND transactions.card_name LIKE '%' || REPLACE(c.card_number, '''', '') || '%')
-                 )
-             )`
-        )
-        .run();
-    } catch (autoMatchErr) {
-      console.warn("Auto-match card_id error:", autoMatchErr);
-    }
-
     const data = db.select().from(cards).orderBy(desc(cards.createdAt)).all();
 
     // Available months with card transactions
@@ -98,6 +68,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const evidenceError = validateCardEvidence(body);
+    if (evidenceError) return NextResponse.json({ error: evidenceError }, { status: 400 });
     const { cardCompany, cardName } = body;
 
     if (!cardCompany || !cardName) {
@@ -118,10 +90,13 @@ export async function POST(request: NextRequest) {
         annualFee: body.annualFee ? Number(body.annualFee) : 0,
         issueDate: body.issueDate || null,
         expiryDate: body.expiryDate || null,
-        monthlyTarget: body.monthlyTarget ? Number(body.monthlyTarget) : null,
-        monthlyDiscountLimit: body.monthlyDiscountLimit
-          ? Number(body.monthlyDiscountLimit)
-          : null,
+        monthlyTarget: body.monthlyTarget !== "" && body.monthlyTarget != null ? Number(body.monthlyTarget) : null,
+        monthlyDiscountLimit: body.monthlyDiscountLimit !== "" && body.monthlyDiscountLimit != null ? Number(body.monthlyDiscountLimit) : null,
+        sourceUrl: body.sourceUrl || null,
+        verifiedAt: body.verifiedAt || null,
+        promotionBenefits: body.promotionBenefits || null,
+        limitDetails: body.limitDetails || null,
+        verificationStatus: body.verificationStatus || "unverified",
         mainBenefits: body.mainBenefits || null,
         familyMemberId: body.familyMemberId
           ? Number(body.familyMemberId)
@@ -130,23 +105,13 @@ export async function POST(request: NextRequest) {
       })
       .run();
 
-    // Auto-match existing transactions by cardCompany + cardName (exact or normalized)
+    // Historical relinking is an explicit operation, not a registration side effect.
     const cardId = Number(result.lastInsertRowid);
-    const matched = sqlite
-      .prepare(
-        `UPDATE transactions SET card_id = ?
-         WHERE card_company = ? AND card_id IS NULL AND (
-           card_name = ?
-           OR REPLACE(REPLACE(card_name, '본인', ''), ' ', '') = REPLACE(REPLACE(?, '본인', ''), ' ', '')
-           OR (? IS NOT NULL AND card_name LIKE '%' || REPLACE(?, '''', '') || '%')
-         )`
-      )
-      .run(cardId, cardCompany, cardName, cardName, body.cardNumber || null, body.cardNumber || null);
 
     return NextResponse.json({
       success: true,
       id: cardId,
-      matchedTransactions: matched.changes,
+      matchedTransactions: 0,
     });
   } catch (error) {
     console.error("POST /api/cards error:", error);

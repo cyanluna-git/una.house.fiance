@@ -39,6 +39,11 @@ export interface Card {
   expiryDate: string | null;
   monthlyTarget: number | null;
   monthlyDiscountLimit: number | null;
+  verificationStatus: string;
+  sourceUrl: string | null;
+  verifiedAt: string | null;
+  promotionBenefits: string | null;
+  limitDetails: string | null;
   mainBenefits: string | null;
   familyMemberId: number | null;
   note: string | null;
@@ -51,6 +56,7 @@ export interface CardInfo {
   cardCompany: string;
   cardName: string;
   isActive: boolean;
+  cardNumber?: string | null;
 }
 
 /** Full trip entity with computed expense data */
