@@ -16,6 +16,7 @@ try {
  const unauth=await (await browser.newContext()).request.get(`${BASE}/api/tax`);
  if(unauth.status()!==401) throw new Error('API auth bypass'); checks.push('unauthenticated API 401');
  await page.goto(`${BASE}/tax`);
+ await page.getByText(/^원문 항목·등록·대사 상세/).click();
  for(const name of ['연도별 비교','버전 비교','근거와 검토','납부·환급 대사']) await page.getByRole('heading',{name,exact:true}).waitFor();
  checks.push('four sections visible');
  const api=context.request;
@@ -36,12 +37,13 @@ try {
   for(const [field_code,amount] of Object.entries({assessed:200000,withheld:199895,settlement:105})) await create('fact',{version_id:vid,document_id:did,field_code,jurisdiction:'local',basis:'source',amount,page:1});
   await create('review',{subject_id:sid,year,version_id:vid,kind:'selection',topic:'version',note:'Synthetic manual comparison basis'});
  }
- await page.reload();
- await page.getByRole('cell',{name:'Synthetic annual fixture',exact:true}).first().waitFor();
- const annualRow=page.getByRole('row').filter({has:page.getByRole('cell',{name:'2020',exact:true})}).filter({has:page.getByRole('cell',{name:'Synthetic annual fixture',exact:true})}).last();
- for(const text of ['급여 / national','상여 / national','총급여 / national','과세표준 / national','결정세액 / local','기납부·원천징수세액 / local','무신고 가산세 / penalty']) await annualRow.getByText(text,{exact:false}).first().waitFor();
- await page.getByText('원문 기한후 신고',{exact:false}).first().waitFor();
+ await page.reload(); await page.getByText(/^원문 항목·등록·대사 상세/).click();
+ const annualRow=page.getByTestId('annual-card').filter({has:page.getByRole('heading',{name:'2020년',exact:true})}).filter({hasText:'Synthetic annual fixture'});
+ await annualRow.getByText(/^선택 기준 전체 항목/).click();
+ for(const text of ['급여 · 국세','상여 · 국세','총급여 · 국세','과세표준 · 국세','결정세액 · 지방세','기납부·원천징수세액 · 지방세','무신고 가산세 · 가산세']) await annualRow.getByText(text,{exact:false}).first().waitFor();
  const selected=await annualRow.innerText(); if(!selected.includes('40,002,020') || !selected.includes('5,000,000') || !selected.includes('45,002,020')) throw new Error('Explicit comparison amounts absent');
+ await page.getByLabel('열람 버전 (비교 기준 변경 아님)').selectOption(String((await (await api.get(`${BASE}/api/tax`)).json()).versions.find((v:any)=>v.subject_id===sid && v.year===2020).id));
+ await page.getByText('원문 late',{exact:false}).first().waitFor();
  checks.push('six-year explicit wage/base/national/local/penalty fixture and annual amounts');
  await page.getByText('검토한 금액 입력 · 수정 이력 추가',{exact:true}).click();
  const factForm=page.locator('form').filter({has:page.getByRole('button',{name:'금액 이력 추가',exact:true})});
@@ -76,7 +78,7 @@ try {
  if(historical.transactions.total!==25 || historical.payslips.total!==25 || historical.transactions.rows.length!==5) throw new Error('Historical paging failed');
  const proof=await create('document',{subject_id:sid,drive_id:`synthetic_history_${sid}`,revision:'r1',binary_hash:'b'.repeat(64),label:'Synthetic historical proof',content_year:2024,kind:'payment'});
  const historyVersion=await create('version',{subject_id:sid,year:2024,document_id:proof,kind:'original',report_class:'regular'});
- await page.reload(); await page.getByRole('button',{name:'다음 페이지',exact:true}).click();
+ await page.reload(); await page.getByText(/^원문 항목·등록·대사 상세/).click(); await page.getByRole('button',{name:'다음 페이지',exact:true}).click();
  await page.getByTestId('candidate-page').getByText('2 페이지',{exact:false}).waitFor();
  await page.getByText('부분 배분 후보 등록 / 사람이 증거 확인 후 확정',{exact:true}).click();
  const linkForm=page.locator('form').filter({has:page.getByRole('button',{name:'연결 이력 추가',exact:true})});

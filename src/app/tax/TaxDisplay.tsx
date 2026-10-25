@@ -1,0 +1,25 @@
+"use client";
+import {useState, type ReactNode} from 'react';
+import Money from '../../components/Money';
+import type {TaxStore,Row} from '../../lib/tax/store';
+import {factLabels} from '../../lib/tax/taxonomy';
+type Snapshot=ReturnType<TaxStore['snapshot']>;
+const jurisdiction:Record<string,string>={national:'국세',local:'지방세',penalty:'가산세'};
+export function Disclosure({label,children}:{label:string;children:ReactNode}) {
+ const [open,setOpen]=useState(false);
+ return <details onToggle={e=>setOpen(e.currentTarget.open)}><summary>{label}</summary>{open&&children}</details>;
+}
+function Amount({fact}:{fact:Row}) {return fact.amount===null?<span>미확인</span>:<Money value={Number(fact.amount)}/>;}
+function Evidence({fact,documents}:{fact:Row;documents:Row[]}) {
+ const doc=documents.find(d=>d.id===fact.document_id);
+ return <Disclosure label="근거 보기"><p className="text-sm text-slate-500">관측 #{fact.id} · {jurisdiction[String(fact.jurisdiction)]} · {fact.basis==='source'?'원문':'계산값'} · {fact.review_status==='verified'?'대조 확인':'관측'}</p><a className="text-blue-700 underline" href={`${doc?.url}#page=${fact.page}`} target="_blank" rel="noreferrer">{String(doc?.label)} · 문서 #{fact.document_id} p.{fact.page}</a>{fact.supersedes_id&&<p>수정 전 #{fact.supersedes_id} 보존</p>}</Disclosure>;
+}
+function FactRows({facts,documents}:{facts:Row[];documents:Row[]}) {return <div>{facts.map(f=><div className="tax-fact" data-fact-id={f.id} key={f.id}><div className="tax-money-row"><span>{factLabels[String(f.field_code)]??String(f.field_code)} · {jurisdiction[String(f.jurisdiction)]}</span><Amount fact={f}/></div><Evidence fact={f} documents={documents}/></div>)}</div>;}
+export function AnnualDisplay({data,subject,year}:{data:Snapshot;subject:string;year:string}) {
+ return <div className="tax-annual-grid">{data.annual.filter(a=>(!subject||String(a.subject_id)===subject)&&(!year||String(a.year)===year)).map(a=><article data-testid="annual-card" className="tax-annual-card" key={`${a.subject_id}-${a.year}`}><header className="flex justify-between gap-3"><div><h3 className="text-xl font-semibold">{a.year}년</h3><p className="text-sm text-slate-500">{String(data.subjects.find(s=>s.id===a.subject_id)?.alias)}</p></div><span className="text-sm text-amber-800">납부 미확인</span></header><p className="my-3 text-sm">명시적 비교 기준 {a.selected_version_id?`#${a.selected_version_id}`:'미선택'}</p>{data.versions.filter(v=>v.year===a.year&&v.subject_id===a.subject_id).length>1&&<p className="mb-3 text-sm text-amber-800">여러 버전이 있습니다. 원문 차이와 접수증을 검토하세요. 최종본·납부 확정 아님.</p>}<div className="space-y-2">{[{label:'총급여',code:'gross_total',scope:'national'},{label:'국세',code:'assessed',scope:'national'},{label:'지방세',code:'assessed',scope:'local'},{label:'정산액',code:'settlement',scope:'national'}].map(item=>{const facts=a.comparison_facts.filter(f=>f.field_code===item.code&&f.jurisdiction===item.scope);return <div className="tax-money-row" key={item.label}><span>{item.label}</span><div className="text-right">{facts.length===1?<><Amount fact={facts[0]}/><span className="block text-xs text-slate-500">{facts[0].basis==='source'?'원문 관측':'계산값'}</span></>:facts.length>1?<span data-summary-observation className="text-xs text-amber-800">관측 {facts.length}건 · 상세 확인</span>:'미확인'}</div></div>;})}</div><p className="mt-3 text-xs text-slate-500">정산액: 국세 · 원문/계산값은 각 금액에 표시 · 합산하지 않음<br/>여러 관측은 전체 항목에서 각각 확인 · 최종본 추정 없음</p><Disclosure label={`선택 기준 전체 항목 (${a.comparison_facts.length})`}><FactRows facts={a.comparison_facts} documents={data.documents}/></Disclosure></article>)}</div>;
+}
+export function VersionDisplay({versions,data}:{versions:Row[];data:Snapshot}) {
+ const [chosen,setChosen]=useState('');
+ const visible=versions.find(v=>String(v.id)===chosen);
+ return <div className="mt-3"><label className="block">열람 버전 (비교 기준 변경 아님)<select className="w-full border rounded p-2 mt-1" value={visible?chosen:''} onChange={e=>setChosen(e.target.value)}><option value="">버전을 선택하세요</option>{versions.map(v=><option key={v.id} value={v.id}>#{v.id} · {v.year} · {v.kind} · {v.report_class}</option>)}</select></label>{visible&&<article className="mt-4"><h3 className="font-semibold">#{visible.id} · {visible.year} · {String(visible.kind)}</h3><p className="text-sm">원문 {String(visible.report_class)} · 신고 {String(visible.filing_status)} · 선행 {String(visible.predecessor_id??'없음')}</p>{['소득','공제','세금','출처·검토'].map(group=>{const facts=data.facts.filter(f=>f.version_id===visible.id);const grouped=facts.filter(f=>{const code=String(f.field_code);const bucket=/deduction|credit|mortgage|child|donation/.test(code)?'공제':/salary|bonus|gross|income|taxable_base/.test(code)?'소득':'세금';return bucket===group;});return <Disclosure key={`${visible.id}-${group}`} label={`${group} (${group==='출처·검토'?facts.length:grouped.length})`}>{group==='출처·검토'?facts.map(f=><div key={f.id} className="tax-fact"><Evidence fact={f} documents={data.documents}/></div>):<FactRows facts={grouped} documents={data.documents}/>}</Disclosure>;})}</article>}</div>;
+}
