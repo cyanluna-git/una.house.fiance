@@ -18,7 +18,7 @@ export function guardedPath(input: string) {
 export function migrate(input:string,apply=false) {
  const file=guardedPath(input); if(!apply) return 'dry-run';
  const db=new Database(file);
- try { return applyMigration(db,'uf-tax-001',readFileSync(path.join(process.cwd(),'migrations/uf-tax-001.sql'),'utf8')); } finally { db.close(); }
+ try { const outcomes=['uf-tax-001','uf-tax-002'].map(version=>applyMigration(db,version,readFileSync(path.join(process.cwd(),`migrations/${version}.sql`),'utf8'))); return outcomes.every(result=>result==='unchanged')?'unchanged':'applied'; } finally { db.close(); }
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href) {
  const args=process.argv.slice(2); const file=args.find(a=>!a.startsWith('--'));

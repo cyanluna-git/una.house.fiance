@@ -5,7 +5,7 @@ import Badge from '../../components/Badge';
 import type { TaxStore, Row } from '../../lib/tax/store';
 type Snapshot=ReturnType<TaxStore['snapshot']>;
 const inputClass='w-full rounded border border-slate-300 p-2 text-sm bg-white';
-const factLabels:Record<string,string>={salary:'급여',bonus:'상여',gross_total:'총급여',taxable_base:'과세표준',earned_income_deduction:'근로소득공제',earned_income_amount:'근로소득금액',computed_tax:'산출세액',basic_deduction:'인적 기본공제',pension_deduction:'연금보험료 공제',insurance_deduction:'보험료 소득공제',housing_deduction:'주택 소득공제',earned_income_credit:'근로소득 세액공제',child_credit:'자녀 세액공제',donation_credit:'기부금 세액공제',medical_credit:'의료비 세액공제',education_credit:'교육비 세액공제',standard_credit:'표준 세액공제',penalty_late_filing:'무신고 가산세',penalty_underreporting:'과소신고 가산세',penalty_late_payment:'납부지연 가산세',assessed:'결정세액',withheld:'기납부·원천징수세액',settlement:'차감·납부·환급세액',income:'소득 (구분 미상)',deduction:'소득공제 합계',credit:'세액공제 합계',mortgage:'주택 (구분 미상)',child:'자녀 (구분 미상)',donation:'기부 (구분 미상)'};
+import {factLabels} from '@/lib/tax/taxonomy';
 const reportLabels:Record<string,string>={regular:'정기 신고',late:'기한후 신고',amended:'수정 신고',annual:'연간 신고 (세부 미상)',withholding:'연말 정산',other:'기타'};
 const reviewLabels:Record<string,string>={observed:'관측',verified:'대조 확인'};
 const kinds={return:'신고서',correction:'수정 자료',receipt:'접수증 (납부 증거 아님)',payment:'납부·환급 증거',withholding:'원천징수 정산',other:'기타'};

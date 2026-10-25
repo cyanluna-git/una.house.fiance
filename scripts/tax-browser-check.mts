@@ -20,6 +20,13 @@ try {
  checks.push('four sections visible');
  const api=context.request;
  const create=async(kind:string,data:unknown)=>{const r=await api.post(`${BASE}/api/tax`,{data:{kind,data}});if(r.status()!==201)throw new Error(`Synthetic ${kind} rejected`);return (await r.json()).id as number;};
+ for(const code of ['credit_card_deduction','health_insurance_deduction','employment_insurance_deduction','retirement_pension_credit','protection_insurance_credit','political_donation_credit_under_limit','assessed_including_penalties','penalty_total','receipt_payment_due']) {
+  await page.getByText('검토한 금액 입력 · 수정 이력 추가',{exact:true}).click();
+  await page.locator('select[name="field_code"] option').filter({hasText:'.'}).count();
+  if(await page.locator(`select[name="field_code"] option[value="${code}"]`).count()!==1) throw new Error('Missing financial subtype option '+code);
+  await page.getByText('검토한 금액 입력 · 수정 이력 추가',{exact:true}).click();
+ }
+ checks.push('002 financial subtype choices render without raw code fallback');
  const sid=await create('subject',{alias:'Synthetic annual fixture'});
  for(let year=2018;year<=2023;year++) {
   const did=await create('document',{subject_id:sid,drive_id:`synthetic_browser_${sid}_${year}`,revision:'r1',binary_hash:'1234567890123456'.repeat(4),label:`Synthetic annual ${year}`,filename_year:year,content_year:year,kind:year===2020?'correction':'return'});
