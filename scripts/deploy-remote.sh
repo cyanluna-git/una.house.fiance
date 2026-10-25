@@ -23,7 +23,7 @@ cd "$BASE"
 echo "== [1/6] DB 백업"
 mkdir -p shared/backups
 BACKUP="shared/backups/finance-$TS-pre-${SHA:0:7}.db"
-sqlite3 shared/finance.db ".backup '$BACKUP'"
+(umask 077; sqlite3 shared/finance.db ".backup '$BACKUP'")
 [ "$(sqlite3 "$BACKUP" 'select count(*) from transactions')" -ge 0 ]
 # 백업은 최근 30개만 보관
 ls -1t shared/backups/finance-*.db 2>/dev/null | tail -n +31 | xargs -r rm -f

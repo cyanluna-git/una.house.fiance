@@ -178,12 +178,12 @@ const FAKE_RECEIPT = {
 };
 
 for (const vp of VIEWPORTS.filter((v) => v.width < 900)) {
-  test(`/quick 검토 카드 (영수증 경고) — ${vp.name}`, async ({ browser }) => {
+  test(`/quick 검토 카드 (영수증 경고) — ${vp.name}`, async ({ browser, baseURL }) => {
     const ctx = await browser.newContext({
       viewport: { width: vp.width, height: vp.height },
       isMobile: true,
       hasTouch: true,
-      baseURL: "http://127.0.0.1:3106",
+      baseURL,
     });
     const page = await ctx.newPage();
     await page.request.post("/api/auth/unlock", { data: { key: "layout-test-key" } });

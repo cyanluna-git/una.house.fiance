@@ -4,7 +4,8 @@ import {
   type KookminRow,
 } from "../fixtures/xlsx-helpers";
 
-const BASE = "http://localhost:3105";
+import { isolatedBaseURL } from "../fixtures/isolated-env";
+const BASE = isolatedBaseURL();
 const TEST_KEY = "test-key-base64";
 
 async function getAuthCookie(): Promise<string> {
@@ -299,7 +300,7 @@ test.describe("E2E-06: 인증 만료", () => {
       {
         name: "unahouse_auth",
         value: "invalid_hash_value_xxxx",
-        domain: "localhost",
+        domain: new URL(BASE).hostname,
         path: "/",
       },
     ]);

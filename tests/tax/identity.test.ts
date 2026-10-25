@@ -1,0 +1,22 @@
+import {test,expect} from 'vitest';
+import Database from 'better-sqlite3';
+import {readFileSync} from 'node:fs';
+import {TaxStore} from '../../src/lib/tax/store';
+test('explicit identity review appends timestamped history independently and rejects invalid family references',()=>{
+ const db=new Database(':memory:'); db.exec('CREATE TABLE family_members(id INTEGER PRIMARY KEY); INSERT INTO family_members VALUES(7); CREATE TABLE transactions(id INTEGER PRIMARY KEY,amount INTEGER); INSERT INTO transactions VALUES(1,735); CREATE TABLE salary_statements(id INTEGER PRIMARY KEY);'); db.exec(readFileSync('migrations/uf-tax-001.sql','utf8'));
+ const store=new TaxStore(db); const s=store.create('subject',{alias:'Synthetic identity'}).id;
+ const d=store.create('document',{subject_id:s,drive_id:'synthetic_identity',revision:'r1',binary_hash:'a'.repeat(64),label:'Synthetic identity evidence',kind:'return',content_year:2024}).id;
+ const v=store.create('version',{subject_id:s,year:2024,document_id:d,kind:'original',report_class:'regular',filing_status:'filed'}).id;
+ store.create('fact',{version_id:v,document_id:d,field_code:'salary',jurisdiction:'national',basis:'source',amount:5,page:1,review_status:'verified'});
+ const before=store.snapshot();
+ expect(()=>store.reviewIdentity({subject_id:s,alias:'Safe alias',family_member_id:999,identity_status:'confirmed'})).toThrow();
+ store.reviewIdentity({subject_id:s,alias:'Safe alias',family_member_id:7,identity_status:'confirmed'});
+ store.reviewIdentity({subject_id:s,alias:'Safe alias',family_member_id:null,identity_status:'unconfirmed'});
+ const snap=store.snapshot(); expect(snap.subjects[0].identity_status).toBe('unconfirmed'); expect(snap.reviews).toHaveLength(2);
+ expect(snap.reviews[0].note).toMatch(/^\d{4}-.*Z identity confirmed; family 7$/);
+ expect(snap.reviews[1].note).toContain('identity unconfirmed'); expect(snap.facts).toEqual(before.facts); expect(snap.versions).toEqual(before.versions); expect(snap.links).toEqual(before.links); expect(snap.annual[0].payment_status).toBe('unknown');
+ expect(db.prepare('SELECT * FROM transactions').all()).toEqual([{id:1,amount:735}]);
+ expect(db.prepare('SELECT * FROM family_members').all()).toEqual([{id:7}]);
+ expect(()=>store.reviewIdentity({subject_id:s,alias:'900101-1234567',family_member_id:null,identity_status:'confirmed'})).toThrow();
+ expect(store.snapshot().reviews).toHaveLength(2); db.close();
+});

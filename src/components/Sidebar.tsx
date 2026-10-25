@@ -32,6 +32,7 @@ export const MENU: MenuSection[] = [
     title: "재무",
     items: [
       { label: "수입", href: "/income", icon: "💰" },
+      { label: "연간 세금", href: "/tax", icon: "📑" },
       { label: "고정지출", href: "/fixed-expenses", icon: "🔄" },
       { label: "자산", href: "/assets", icon: "🏦" },
       { label: "대출", href: "/loans", icon: "📋" },

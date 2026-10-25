@@ -1,0 +1,30 @@
+import { test, expect } from 'vitest';
+import { mkdtempSync, readFileSync, symlinkSync } from 'node:fs';
+import path from 'node:path';
+import Database from 'better-sqlite3';
+import { guardedPath, migrate } from '../../scripts/tax-migrate';
+import { withTaxStore } from '../../src/lib/tax/connection';
+const scratch='/Users/cyanluna-mini6/.hermes/cache/scratch';
+test('migration dry-run is default; only explicit scratch synthetic non-symlink files may apply',()=>{
+ const dir=mkdtempSync(path.join(scratch,'tax-test-')); const file=path.join(dir,'synthetic.sqlite');
+ expect(()=>guardedPath('/Users/cyanluna-mini6/dev/finance.db')).toThrow();
+ expect(()=>guardedPath(path.join(dir,'finance.db'))).toThrow();
+ const db=new Database(file); db.close();
+ symlinkSync(file,path.join(dir,'alias.sqlite')); expect(()=>guardedPath(path.join(dir,'alias.sqlite'))).toThrow();
+ symlinkSync('/Users/cyanluna-mini6/.hermes/cache/scratch/nonexistent-outside.sqlite',path.join(dir,'dangling.sqlite'));
+ expect(()=>guardedPath(path.join(dir,'dangling.sqlite'))).toThrow();
+ expect(migrate(file)).toBe('dry-run');
+ const before=new Database(file); expect(before.prepare("SELECT name FROM sqlite_master WHERE name='tax_subjects'").get()).toBeUndefined(); before.close();
+ expect(migrate(file,true)).toBe('applied');
+ const ledger=new Database(file); const history=ledger.prepare('SELECT * FROM tax_migrations').all(); ledger.close();
+ expect(migrate(file,true)).toBe('unchanged'); const repeated=new Database(file); expect(repeated.prepare('SELECT * FROM tax_migrations').all()).toEqual(history); repeated.close();
+ expect(readFileSync('migrations/uf-tax-001.sql','utf8')).not.toMatch(/\b(?:DELETE|UPDATE|DROP)\b/i);
+});
+test('lazy connection never creates a missing file or schema and reports migration required',()=>{
+ const dir=mkdtempSync(path.join(scratch,'tax-test-')); process.env.UNAHOUSE_DB_PATH=path.join(dir,'missing.sqlite');
+ expect(()=>withTaxStore(s=>s.snapshot())).toThrow('Migration required');
+ const db=new Database(process.env.UNAHOUSE_DB_PATH); db.close();
+ expect(()=>withTaxStore(s=>s.snapshot())).toThrow('Migration required');
+ const check=new Database(process.env.UNAHOUSE_DB_PATH); expect(check.prepare("SELECT count(*) n FROM sqlite_master WHERE name LIKE 'tax_%'").get()).toEqual({n:0}); check.close();
+ delete process.env.UNAHOUSE_DB_PATH;
+});
